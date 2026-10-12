@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Going Glocal · Practice</title>
+<style>
+  :root { --wine:#722F37; --gold:#C5A059; --bg:#FFFAF0; --card:#FFFFFF; --soft:#F6ECE4; --text:#1A1A1A; --muted:#555555;
+          --ok:#2D7A4A; --okbg:#E3F1E8; --bad:#B04545; --badbg:#F8E5E5; --line:#EADFC8; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:Arial, Helvetica, sans-serif; background:var(--bg); color:var(--text); }
+  header { background:var(--wine); color:#fff; padding:14px 18px; }
+  header h1 { margin:0; font-size:22px; }
+  header p { margin:4px 0 0; font-size:14px; opacity:.9; }
+  main { max-width:860px; margin:0 auto; padding:16px; }
+  .progress { display:flex; flex-wrap:wrap; gap:6px; margin:4px 0 14px; }
+  .dot { width:34px; height:34px; border-radius:50%; border:2px solid var(--gold); background:#fff; color:var(--wine);
+         font-weight:bold; cursor:pointer; }
+  .dot.active { background:var(--wine); color:#fff; border-color:var(--wine); }
+  .dot.done { background:var(--okbg); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px; }
+  .card h2 { margin:0 0 4px; color:var(--wine); font-size:20px; }
+  .instr { margin:0 0 14px; color:var(--muted); }
+  .item { border-top:1px solid var(--line); padding:12px 0; }
+  .item:first-of-type { border-top:none; }
+  .q { font-weight:bold; margin-bottom:8px; }
+  .opts { display:flex; flex-wrap:wrap; gap:8px; }
+  .opt { border:2px solid var(--line); background:#fff; border-radius:20px; padding:7px 14px; cursor:pointer; font-size:15px; }
+  .opt.sel { border-color:var(--wine); background:var(--soft); }
+  .item.correct .opt.sel, .item.correct .answerline { border-color:var(--ok); background:var(--okbg); }
+  .item.wrong .opt.sel, .item.wrong .answerline { border-color:var(--bad); background:var(--badbg); }
+  .fb { margin-top:6px; font-size:14px; min-height:18px; }
+  .item.correct .fb { color:var(--ok); } .item.wrong .fb { color:var(--bad); }
+  .hint { display:none; margin-top:6px; font-size:14px; color:var(--wine); background:var(--soft); padding:6px 10px; border-radius:8px; }
+  .showhints .hint { display:block; }
+  .tiles { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+  .tile { border:1px solid var(--gold); background:#FBF3E4; border-radius:6px; padding:6px 10px; cursor:pointer; font-size:15px; }
+  .tile.used { visibility:hidden; }
+  .answerline { min-height:40px; border:2px dashed var(--line); border-radius:8px; padding:6px; display:flex; flex-wrap:wrap; gap:6px; }
+  .answerline .tile { background:#fff; }
+  .controls { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+  button.ctl { font-family:inherit; font-size:15px; border-radius:8px; padding:9px 14px; cursor:pointer; border:2px solid var(--wine); background:#fff; color:var(--wine); }
+  button.ctl.primary { background:var(--wine); color:#fff; }
+  .score { margin-top:10px; font-weight:bold; color:var(--wine); min-height:20px; }
+  .nav { display:flex; justify-content:space-between; margin-top:14px; }
+  .plan { display:grid; gap:6px; margin:6px 0 14px; font-size:13px; }
+  .floor { display:grid; grid-template-columns:110px repeat(4, 1fr) 70px 70px; gap:4px; align-items:stretch; }
+  .floor div { border:1px solid var(--wine); border-radius:6px; padding:6px 4px; text-align:center; background:#fff; }
+  .floor .lab { border:none; background:none; color:var(--wine); font-weight:bold; text-align:left; }
+  .floor .empty { border:none; background:none; }
+  table.sum { width:100%; border-collapse:collapse; margin-top:10px; }
+  table.sum td, table.sum th { border-bottom:1px solid var(--line); padding:8px; text-align:left; }
+  footer { text-align:center; color:var(--muted); font-size:12px; padding:18px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Going Glocal · Practice</h1>
+  <p>Level 4 · Unit 4 — marketing, must / might / can't, relative clauses, opinions</p>
+</header>
+<main>
+  <div class="progress" id="progress"></div>
+  <div class="card" id="stage"></div>
+  <div class="nav">
+    <button class="ctl" id="back">← Back</button>
+    <button class="ctl primary" id="next">Next →</button>
+  </div>
+</main>
+<footer>Irvin Romo · English Teacher</footer>
+<script>
+const ACTIVITIES = [
+ {
+  "id": "L4U04-APP-A01",
+  "title": "Marketing words",
+  "instr": "Complete the sentence.",
+  "type": "mcq",
+  "items": [
+   [
+    "Our main ___ is fresh chicken.",
+    [
+     "product",
+     "logo",
+     "slogan"
+    ],
+    "product",
+    "What a company sells."
+   ],
+   [
+    "The supplier put its ___ — a red star — on every box.",
+    [
+     "logo",
+     "commercial",
+     "sponsor"
+    ],
+    "logo",
+    "A picture or symbol of a brand."
+   ],
+   [
+    "A big company is going to ___ the farm's football team.",
+    [
+     "sponsor",
+     "advertise",
+     "endorse it"
+    ],
+    "sponsor",
+    "Pay money to support a team."
+   ],
+   [
+    "I saw a funny TV ___ during the game.",
+    [
+     "commercial",
+     "logo",
+     "product"
+    ],
+    "commercial",
+    "An advertisement on TV."
+   ],
+   [
+    "\"Just do it\" is a famous ___.",
+    [
+     "slogan",
+     "sponsor",
+     "status symbol"
+    ],
+    "slogan",
+    "A short, memorable phrase."
+   ],
+   [
+    "For some people, an expensive watch is a ___.",
+    [
+     "status symbol",
+     "slogan",
+     "commercial"
+    ],
+    "status symbol",
+    "Something that shows wealth or importance."
+   ]
+  ]
+ },
+ {
+  "id": "L4U04-APP-A02",
+  "title": "How sure are you?",
+  "instr": "Choose the modal: must, might / could, or can't.",
+  "type": "mcq",
+  "items": [
+   [
+    "They ___ be a very good team. They haven't won a single game this season!",
+    [
+     "can't",
+     "must",
+     "might"
+    ],
+    "can't",
+    "Sure it's not true."
+   ],
+   [
+    "They ___ be the best team this year, but I'm not sure.",
+    [
+     "might",
+     "must",
+     "can't"
+    ],
+    "might",
+    "Not sure → might / could / may."
+   ],
+   [
+    "They ___ be the best team this year. They've won everything!",
+    [
+     "must",
+     "might",
+     "can't"
+    ],
+    "must",
+    "Sure it's true."
+   ],
+   [
+    "If it's three times the price, then it ___ be real.",
+    [
+     "must",
+     "can't",
+     "might"
+    ],
+    "must",
+    "Sure it's true."
+   ],
+   [
+    "That watch ___ be real. It's too cheap!",
+    [
+     "can't",
+     "must",
+     "could"
+    ],
+    "can't",
+    "Sure it's not true."
+   ],
+   [
+    "It ___ be dangerous. Let's check first.",
+    [
+     "could",
+     "must",
+     "can't"
+    ],
+    "could",
+    "Not sure → could."
+   ]
+  ]
+ },
+ {
+  "id": "L4U04-APP-A03",
+  "title": "who, which, that or where?",
+  "instr": "Choose the relative pronoun.",
+  "type": "mcq",
+  "items": [
+   [
+    "I use an SAP transaction ___ checks the stock of materials.",
+    [
+     "which",
+     "who",
+     "where"
+    ],
+    "which",
+    "Things → which / that."
+   ],
+   [
+    "We have a supplier ___ always delivers on time.",
+    [
+     "who",
+     "which",
+     "where"
+    ],
+    "who",
+    "People → who / that."
+   ],
+   [
+    "This is the warehouse ___ we keep critical materials.",
+    [
+     "where",
+     "which",
+     "who"
+    ],
+    "where",
+    "Places → where."
+   ],
+   [
+    "The apartment ___ I want to rent is near the office.",
+    [
+     "that",
+     "who",
+     "where"
+    ],
+    "that",
+    "Object clause: that / which (or nothing)."
+   ],
+   [
+    "Riyadh is the city ___ I'm going to work.",
+    [
+     "where",
+     "which",
+     "who"
+    ],
+    "where",
+    "A place → where."
+   ],
+   [
+    "Viral stories are often about ordinary people ___ do something amazing.",
+    [
+     "who",
+     "which",
+     "where"
+    ],
+    "who",
+    "People → who."
+   ]
+  ]
+ },
+ {
+  "id": "L4U04-APP-A04",
+  "title": "Giving opinions",
+  "instr": "Complete the expression.",
+  "type": "mcq",
+  "items": [
+   [
+    "As I ___ it, money is changing the game.",
+    [
+     "see",
+     "look",
+     "watch"
+    ],
+    "see",
+    "As I see it, …"
+   ],
+   [
+    "I ___ it really boring.",
+    [
+     "find",
+     "think",
+     "feel it"
+    ],
+    "find",
+    "I find it + adjective."
+   ],
+   [
+    "I really ___ you'd enjoy it.",
+    [
+     "think",
+     "find",
+     "see"
+    ],
+    "think",
+    "I really think …"
+   ],
+   [
+    "It's not so ___ that I hate it, it's just that I don't understand it.",
+    [
+     "much",
+     "many",
+     "more"
+    ],
+    "much",
+    "It's not so much that …, it's just that …"
+   ],
+   [
+    "Now, just a ___ — destroying the game? That's a bit strong.",
+    [
+     "second",
+     "moment it",
+     "minute ago"
+    ],
+    "second",
+    "Interrupting politely."
+   ],
+   [
+    "That's the ___. It's a cultural experience.",
+    [
+     "point",
+     "thing it",
+     "reason that"
+    ],
+    "point",
+    "That's the point."
+   ]
+  ]
+ },
+ {
+  "id": "L4U04-APP-A05",
+  "title": "Strong disagreement",
+  "instr": "Choose the expression.",
+  "type": "mcq",
+  "items": [
+   [
+    "What? I ___. The special effects are great.",
+    [
+     "couldn't disagree more",
+     "could disagree more",
+     "couldn't agree more"
+    ],
+    "couldn't disagree more",
+    "Strong disagreement."
+   ],
+   [
+    "That's not ___. Take Deadpool, for instance.",
+    [
+     "true at all",
+     "at all true it",
+     "all true"
+    ],
+    "true at all",
+    "That's not true at all."
+   ],
+   [
+    "No, no. You have it all ___.",
+    [
+     "wrong",
+     "bad",
+     "false"
+    ],
+    "wrong",
+    "You have it all wrong."
+   ],
+   [
+    "Which phrase AGREES completely?",
+    [
+     "I couldn't agree more.",
+     "I couldn't disagree more.",
+     "You have it all wrong."
+    ],
+    "I couldn't agree more.",
+    "agree vs. disagree."
+   ]
+  ]
+ },
+ {
+  "id": "L4U04-APP-A06",
+  "title": "Reasons and consequences",
+  "instr": "Choose the linker.",
+  "type": "mcq",
+  "items": [
+   [
+    "The stores open late. ___, people on the late shift shop there.",
+    [
+     "As a result",
+     "Due to",
+     "Because"
+    ],
+    "As a result",
+    "Consequence → as a result / consequently."
+   ],
+   [
+    "___ lower prices, the new stores are popular.",
+    [
+     "Due to",
+     "As a result",
+     "Consequently"
+    ],
+    "Due to",
+    "due to + noun = because of."
+   ],
+   [
+    "They are successful thanks to the fact that ___.",
+    [
+     "they have more products",
+     "more products",
+     "of more products"
+    ],
+    "they have more products",
+    "thanks to the fact that + sentence."
+   ],
+   [
+    "The farm had a bird illness in 2003. ___, it closed.",
+    [
+     "Consequently",
+     "Due to",
+     "Thanks to"
+    ],
+    "Consequently",
+    "A consequence."
+   ],
+   [
+    "It's sad, ___ we are losing more than stores.",
+    [
+     "as",
+     "due to",
+     "as a result"
+    ],
+    "as",
+    "as = because + sentence."
+   ]
+  ]
+ },
+ {
+  "id": "L4U04-APP-A07",
+  "title": "Advertising techniques",
+  "instr": "Choose the technique the ad uses.",
+  "type": "mcq",
+  "items": [
+   [
+    "A famous soccer player wears an expensive watch.",
+    [
+     "Endorsement",
+     "Technology",
+     "Guilt"
+    ],
+    "Endorsement",
+    "A famous person recommends it."
+   ],
+   [
+    "A truck drives alone through the desert at sunset.",
+    [
+     "Association of ideas",
+     "Endorsement",
+     "Technology"
+    ],
+    "Association of ideas",
+    "It links the product with freedom."
+   ],
+   [
+    "A perfect burger with fresh tomatoes fills the screen.",
+    [
+     "\"The camera never lies\"",
+     "Guilt",
+     "Endorsement"
+    ],
+    "\"The camera never lies\"",
+    "A perfect picture of the product."
+   ],
+   [
+    "A new phone has \"the fastest chip ever\".",
+    [
+     "Technology",
+     "Guilt",
+     "Association of ideas"
+    ],
+    "Technology",
+    "Technical features."
+   ],
+   [
+    "\"Don't you want the best for your family?\"",
+    [
+     "Guilt",
+     "Technology",
+     "Endorsement"
+    ],
+    "Guilt",
+    "It makes you feel bad if you don't buy."
+   ]
+  ]
+ },
+ {
+  "id": "L4U04-APP-A08",
+  "title": "Build the sentence",
+  "instr": "Tap the parts in the right order. Tap a part again to remove it.",
+  "type": "order",
+  "items": [
+   [
+    [
+     "We have a supplier",
+     "who",
+     "always delivers on time"
+    ],
+    "We have a supplier who always delivers on time",
+    "People → who."
+   ],
+   [
+    [
+     "This is the warehouse",
+     "where",
+     "we keep critical materials"
+    ],
+    "This is the warehouse where we keep critical materials",
+    "Places → where."
+   ],
+   [
+    [
+     "It",
+     "can't be real.",
+     "It's too cheap!"
+    ],
+    "It can't be real. It's too cheap!",
+    "Sure it's not true → can't."
+   ],
+   [
+    [
+     "As I see it,",
+     "money is",
+     "changing the game"
+    ],
+    "As I see it, money is changing the game",
+    "Giving an opinion."
+   ]
+  ]
+ }
+];
+
+// deterministic shuffle so the correct option is not always first
+function seeded(s){ let h=2166136261; for(const c of s){ h^=c.charCodeAt(0); h=Math.imul(h,16777619);} return ()=>{ h^=h<<13; h^=h>>>17; h^=h<<5; return ((h>>>0)%1000)/1000; }; }
+function shuffle(arr, key){ const r=seeded(key), a=arr.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(r()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+const state = ACTIVITIES.map(a => ({answers:a.items.map(()=>a.type==='order'?[]:null), checked:false, score:null, hints:false}));
+let current = 0, finished = false;
+const stage = document.getElementById('stage');
+
+function planHTML(){
+  const f=(label, rooms)=>`<div class="floor"><div class="lab">${label}</div>${rooms.map(r=>r?`<div>${r}</div>`:'<div class="empty"></div>').join('')}<div>stairs</div><div>elevator</div></div>`;
+  return `<div class="plan" aria-label="Restaurant floor plan">${f('Second floor',['office','staff room','',''])}${f('Ground floor',['entrance + lobby','kitchen','dining room','restroom'])}${f('Basement',['storage room','cold room','',''])}<div style="color:var(--muted)">On the ground floor, the hallway goes from the lobby to the stairs. The rooms are on your right.</div></div>`;
+}
+
+function render(){
+  renderProgress();
+  if(finished){ return renderSummary(); }
+  const a=ACTIVITIES[current], s=state[current];
+  let html=`<h2>${current+1}. ${a.title}</h2><p class="instr">${a.instr}</p>${a.plan?planHTML():''}<div class="items ${s.hints?'showhints':''}" data-activity="${a.id}" data-targets="${a.targets}">`;
+  a.items.forEach((it,i)=>{
+    if(a.type==='mcq'){
+      const opts=shuffle(it[1], a.id+i);
+      html+=`<div class="item" data-i="${i}"><div class="q">${i+1}. ${it[0]}</div><div class="opts">${opts.map(o=>`<button class="opt${s.answers[i]===o?' sel':''}" data-v="${encodeURIComponent(o)}">${o}</button>`).join('')}</div><div class="hint">Hint: ${it[3]}</div><div class="fb"></div></div>`;
+    } else {
+      const tiles=shuffle(it[0], a.id+i), used=s.answers[i];
+      html+=`<div class="item" data-i="${i}"><div class="q">${i+1}.</div><div class="tiles">${tiles.map((w,k)=>`<button class="tile${used.includes(k)?' used':''}" data-k="${k}">${w}</button>`).join('')}</div><div class="answerline">${used.map(k=>`<button class="tile placed" data-k="${k}">${tiles[k]}</button>`).join('')}</div><div class="hint">Hint: ${it[2]}</div><div class="fb"></div></div>`;
+    }
+  });
+  html+=`</div><div class="controls"><button class="ctl" id="hint">Hint</button><button class="ctl primary" id="check">Check</button><button class="ctl" id="show">Show answers</button><button class="ctl" id="retry">Try again</button></div><div class="score" id="score">${s.score!==null?scoreText(s.score,a.items.length):''}</div>`;
+  stage.innerHTML=html;
+  if(s.checked) paintCheck(false);
+  bind();
+  document.getElementById('back').disabled = current===0;
+  document.getElementById('next').textContent = current===ACTIVITIES.length-1 ? 'Finish ✓' : 'Next →';
+}
+
+function renderProgress(){
+  const p=document.getElementById('progress');
+  p.innerHTML=ACTIVITIES.map((a,i)=>`<button class="dot${i===current&&!finished?' active':''}${state[i].checked?' done':''}" data-go="${i}" title="${a.title}">${i+1}</button>`).join('');
+  p.querySelectorAll('.dot').forEach(d=>d.onclick=()=>{ finished=false; current=+d.dataset.go; render(); });
+}
+
+function tilesFor(i){ const a=ACTIVITIES[current]; return shuffle(a.items[i][0], a.id+i); }
+
+function bind(){
+  const a=ACTIVITIES[current], s=state[current];
+  stage.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{ const i=+b.closest('.item').dataset.i; s.answers[i]=decodeURIComponent(b.dataset.v); s.checked=false; s.score=null; render(); });
+  stage.querySelectorAll('.tiles .tile').forEach(b=>b.onclick=()=>{ const i=+b.closest('.item').dataset.i, k=+b.dataset.k; if(!s.answers[i].includes(k)) s.answers[i].push(k); s.checked=false; s.score=null; render(); });
+  stage.querySelectorAll('.answerline .tile').forEach(b=>b.onclick=()=>{ const i=+b.closest('.item').dataset.i, k=+b.dataset.k; s.answers[i]=s.answers[i].filter(x=>x!==k); s.checked=false; s.score=null; render(); });
+  document.getElementById('hint').onclick=()=>{ s.hints=!s.hints; render(); };
+  document.getElementById('check').onclick=()=>{ s.checked=true; s.score=countCorrect(); render(); };
+  document.getElementById('show').onclick=()=>{ showAnswers(); s.checked=true; s.score=countCorrect(); s.revealed=true; render(); };
+  document.getElementById('retry').onclick=()=>{ state[current]={answers:a.items.map(()=>a.type==='order'?[]:null), checked:false, score:null, hints:false}; render(); };
+}
+
+function isCorrect(i){
+  const a=ACTIVITIES[current], s=state[current], it=a.items[i];
+  if(a.type==='mcq') return s.answers[i]===it[2];
+  const tiles=tilesFor(i); return s.answers[i].map(k=>tiles[k]).join(' ')===it[1];
+}
+function countCorrect(){ return ACTIVITIES[current].items.reduce((n,_,i)=>n+(isCorrect(i)?1:0),0); }
+function scoreText(n,t){ return `Score: ${n} / ${t}` + (n===t?' — excellent!':''); }
+
+function paintCheck(){
+  const a=ACTIVITIES[current], s=state[current];
+  stage.querySelectorAll('.item').forEach(el=>{
+    const i=+el.dataset.i, ok=isCorrect(i), empty=a.type==='mcq'?s.answers[i]===null:s.answers[i].length===0;
+    el.classList.add(ok?'correct':'wrong');
+    const right=a.type==='mcq'?a.items[i][2]:a.items[i][1].replace(' ?','?');
+    el.querySelector('.fb').textContent = ok ? 'Correct!' : (empty ? 'Choose an answer. ' : 'Not yet. ') + (s.revealed ? 'Answer: '+right : 'Try the hint.');
+  });
+}
+
+function showAnswers(){
+  const a=ACTIVITIES[current], s=state[current];
+  a.items.forEach((it,i)=>{
+    if(a.type==='mcq') s.answers[i]=it[2];
+    else { s.answers[i]=tileOrder(tilesFor(i), it[1]); }
+  });
+}
+
+// Tile indexes that spell the answer; tiles can hold more than one word ("my motorcycle").
+function tileOrder(tiles, answer){
+  const taken=[]; let rest=answer;
+  while(rest.length){
+    const k=tiles.map((t,idx)=>idx).filter(idx=>!taken.includes(idx)&&(rest===tiles[idx]||rest.startsWith(tiles[idx]+' ')))
+                 .sort((x,y)=>tiles[y].length-tiles[x].length)[0];
+    if(k===undefined) break;
+    taken.push(k); rest=rest.slice(tiles[k].length).trimStart();
+  }
+  return taken;
+}
+
+function renderSummary(){
+  const total=ACTIVITIES.reduce((n,a)=>n+a.items.length,0);
+  const got=state.reduce((n,s)=>n+(s.score||0),0);
+  stage.innerHTML=`<h2>Well done!</h2><p class="instr">Here is your score for each activity. Choose an activity to practice again.</p>
+   <table class="sum"><tr><th>Activity</th><th>Score</th></tr>${ACTIVITIES.map((a,i)=>`<tr><td>${i+1}. ${a.title}</td><td>${state[i].score===null?'not checked':state[i].score+' / '+a.items.length}</td></tr>`).join('')}
+   <tr><th>Total</th><th id="total">${got} / ${total}</th></tr></table>
+   <div class="controls"><button class="ctl primary" id="restart">Start again</button></div>`;
+  document.getElementById('restart').onclick=()=>{ ACTIVITIES.forEach((a,i)=>state[i]={answers:a.items.map(()=>a.type==='order'?[]:null), checked:false, score:null, hints:false}); finished=false; current=0; render(); };
+  document.getElementById('back').disabled=false;
+  document.getElementById('next').textContent='Finish ✓';
+}
+
+document.getElementById('back').onclick=()=>{ if(finished){ finished=false; } else if(current>0){ current--; } render(); };
+document.getElementById('next').onclick=()=>{ if(current<ACTIVITIES.length-1 && !finished){ current++; } else { finished=true; } render(); };
+render();
+</script>
+</body>
+</html>
