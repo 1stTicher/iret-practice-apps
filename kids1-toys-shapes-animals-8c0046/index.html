@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Toys, Shapes & Animals</title>
+<style>
+:root { --bg:#fff8ec; --ink:#2b2b2b; --brand:#e8562a; --ok:#2e9e5b; --bad:#d64545; --card:#ffffff; --line:#f3c98b; }
+* { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+body { margin:0; font-family:"Arial Rounded MT Bold", Arial, sans-serif; background:var(--bg); color:var(--ink); }
+header { background:var(--brand); color:#fff; padding:10px 16px; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+header h1 { font-size:20px; margin:0; }
+#stars { font-size:22px; white-space:nowrap; }
+main { max-width:760px; margin:0 auto; padding:14px 16px 40px; }
+.prompt { display:flex; align-items:center; gap:10px; margin:6px 0 14px; font-size:22px; }
+.say { border:0; background:#ffe1a8; border-radius:50%; width:56px; height:56px; font-size:28px; cursor:pointer; flex:0 0 auto; }
+.grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:14px; }
+.card { background:var(--card); border:4px solid var(--line); border-radius:22px; min-height:140px; display:flex; flex-direction:column;
+        align-items:center; justify-content:center; font-size:64px; cursor:pointer; user-select:none; padding:8px; transition:transform .1s; }
+.card:active { transform:scale(.96); }
+.card .lbl { font-size:20px; margin-top:6px; }
+.card.ok { border-color:var(--ok); background:#e7f8ee; }
+.card.bad { border-color:var(--bad); animation:shake .3s; }
+.card.sel { border-color:#4b6bdf; background:#eef1ff; }
+.card.done { opacity:.35; pointer-events:none; }
+.card.hidden { font-size:0; background:#ffd38a; }
+.card.hidden::after { content:"?"; font-size:56px; color:#fff; }
+@keyframes shake { 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+.big { font-size:110px; } .small { font-size:44px; }
+.scene { position:relative; height:220px; margin:10px auto 18px; max-width:320px; }
+.box { position:absolute; left:90px; top:80px; width:140px; height:100px; border:5px solid #8a5a2b; background:#f2c58f; border-radius:6px; }
+.thing { position:absolute; font-size:58px; }
+.row { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
+.btn { border:0; border-radius:18px; padding:16px 22px; font-size:22px; background:#4b6bdf; color:#fff; cursor:pointer; min-width:110px; }
+.btn.ok { background:var(--ok); } .btn.bad { background:var(--bad); }
+.slots { display:flex; gap:8px; justify-content:center; margin:12px 0; flex-wrap:wrap; }
+.slot { width:52px; height:60px; border-bottom:5px solid #999; font-size:40px; text-align:center; }
+.letters { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+.letter { width:60px; height:60px; border-radius:14px; background:#ffe1a8; border:3px solid var(--line); font-size:34px; cursor:pointer; }
+.letter:disabled { opacity:.3; }
+.nav { display:flex; justify-content:space-between; margin-top:22px; }
+#start { text-align:center; padding:30px 10px; }
+#start .big { font-size:90px; }
+#finish { text-align:center; font-size:30px; padding:30px 10px; }
+.shape { width:96px; height:96px; }
+</style>
+</head>
+<body>
+<header><h1>Toys, Shapes & Animals</h1><div id="stars">⭐ 0</div></header>
+<main id="app"></main>
+<script>
+const GAMES = [{"id": "K1-SHAPES", "type": "listen", "title": "Shapes", "ask": "Listen and tap the shape!", "items": [{"word": "circle", "pic": "shape:circle:yellow"}, {"word": "square", "pic": "shape:square:brown"}, {"word": "triangle", "pic": "shape:triangle:green"}, {"word": "rectangle", "pic": "shape:rectangle:red"}, {"word": "kite", "pic": "shape:kite:blue"}]}, {"id": "K1-COLORS", "type": "listen", "title": "Colors", "ask": "Listen and tap the color!", "items": [{"word": "yellow", "pic": "shape:circle:yellow"}, {"word": "brown", "pic": "shape:circle:brown"}, {"word": "green", "pic": "shape:circle:green"}, {"word": "red", "pic": "shape:circle:red"}, {"word": "blue", "pic": "shape:circle:blue"}]}, {"id": "K1-HOME", "type": "match", "title": "Find the shape at home", "say": "Tap a thing, then tap its shape word!", "items": [{"word": "rectangle", "pic": "📖"}, {"word": "circle", "pic": "⚽"}, {"word": "triangle", "pic": "🥳"}, {"word": "square", "pic": "🧊"}]}, {"id": "K1-SIZE", "type": "size", "title": "Big and small", "items": [{"name": "ball", "pic": "⚽", "want": "big"}, {"name": "ball", "pic": "⚽", "want": "small"}, {"name": "car", "pic": "🚗", "want": "big"}, {"name": "car", "pic": "🚗", "want": "small"}]}, {"id": "K1-TOYS", "type": "memory", "title": "Toys memory", "say": "Find the pairs!", "items": [{"word": "teddy bear", "pic": "🧸"}, {"word": "doll", "pic": "🪆"}, {"word": "monster", "pic": "👾"}, {"word": "car", "pic": "🚗"}, {"word": "ball", "pic": "⚽"}]}, {"id": "K1-PETS", "type": "listen", "title": "Pet show", "ask": "Listen and tap the animal!", "items": [{"word": "dog", "pic": "🐶"}, {"word": "cat", "pic": "🐱"}, {"word": "frog", "pic": "🐸"}, {"word": "duck", "pic": "🦆"}, {"word": "spider", "pic": "🕷️"}, {"word": "lizard", "pic": "🦎"}]}, {"id": "K1-WHERE", "type": "where", "title": "Where is it?", "items": [{"name": "spider", "pic": "🕷️", "where": "on"}, {"name": "lizard", "pic": "🦎", "where": "under"}, {"name": "duck", "pic": "🦆", "where": "in"}, {"name": "cat", "pic": "🐱", "where": "on"}, {"name": "frog", "pic": "🐸", "where": "under"}]}, {"id": "K1-SPELL", "type": "spell", "title": "Spell it!", "say": "Tap the letters!", "items": [{"word": "dog", "pic": "🐶"}, {"word": "cat", "pic": "🐱"}, {"word": "frog", "pic": "🐸"}, {"word": "duck", "pic": "🦆"}]}];
+const SHAPES = {
+  circle: c => `<svg class="shape" viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="${c}" stroke="#333" stroke-width="5"/></svg>`,
+  square: c => `<svg class="shape" viewBox="0 0 100 100"><rect x="12" y="12" width="76" height="76" fill="${c}" stroke="#333" stroke-width="5"/></svg>`,
+  triangle: c => `<svg class="shape" viewBox="0 0 100 100"><polygon points="50,8 92,90 8,90" fill="${c}" stroke="#333" stroke-width="5"/></svg>`,
+  rectangle: c => `<svg class="shape" viewBox="0 0 100 100"><rect x="6" y="28" width="88" height="46" fill="${c}" stroke="#333" stroke-width="5"/></svg>`,
+  kite: c => `<svg class="shape" viewBox="0 0 100 100"><polygon points="50,4 80,40 50,96 20,40" fill="${c}" stroke="#333" stroke-width="5"/></svg>`,
+};
+const COLORS = { yellow:"#ffd34d", brown:"#9b6a3c", green:"#6cc76c", red:"#ef4d4d", blue:"#5aa8f0", white:"#ffffff" };
+function pic(p){ // "shape:circle:red" | emoji
+  if (typeof p === "string" && p.startsWith("shape:")) { const [, s, c] = p.split(":"); return SHAPES[s](COLORS[c] || c || "#fff"); }
+  return p;
+}
+const AUDIO = {"Great!": "91bb266617e2.mp3", "Well done!": "12532d83ae47.mp3", "Super!": "2725114f6471.mp3", "Yes!": "ee33f3746755.mp3", "Fantastic!": "19a129f40958.mp3", "Try again!": "6c5571c034e4.mp3", "Let's play!": "40ea70e0fe54.mp3", "You did it! Great job!": "e6381b3f5207.mp3", "All matched!": "ff9915a44c6d.mp3", "All done! ▶ next game": "3c1999d7adbe.mp3", "Shapes": "b1985e387405.mp3", "Listen and tap the shape!": "12470f232bf4.mp3", "circle": "00b7b8118efd.mp3", "square": "bfed89e80ea0.mp3", "triangle": "b7d045ced8a8.mp3", "rectangle": "bf945223e89c.mp3", "kite": "34e1c7876de9.mp3", "Colors": "88d5e4cac104.mp3", "Listen and tap the color!": "8d4fb87f98a7.mp3", "yellow": "96de5543d183.mp3", "brown": "9166eeff1e50.mp3", "green": "bc74f4f071a5.mp3", "red": "78988010b890.mp3", "blue": "4c9a82ce72ca.mp3", "Tap a thing, then tap its shape word!": "08d00ea4db8c.mp3", "Find the shape at home": "876a00030fe4.mp3", "Big and small": "946b663b5b3d.mp3", "Tap the big ball!": "4c40a19b4a60.mp3", "Tap the small ball!": "fd59a109f734.mp3", "Tap the big car!": "70c025695ca4.mp3", "Tap the small car!": "a130462b723a.mp3", "Find the pairs!": "4ab06cf1563d.mp3", "Toys memory": "2697f02ef12f.mp3", "teddy bear": "da9f522041bd.mp3", "doll": "8f6314ac5d1f.mp3", "monster": "0e818bfa0679.mp3", "car": "9e32521dd2f8.mp3", "ball": "8bec0406497c.mp3", "Pet show": "0de72179df7a.mp3", "Listen and tap the animal!": "7f9a6623c616.mp3", "dog": "e49512524f47.mp3", "cat": "9d989e8d27dc.mp3", "frog": "b3e0f62fa104.mp3", "duck": "5ece240085b9.mp3", "spider": "640fb06193d8.mp3", "lizard": "8e627a22d72a.mp3", "Where is it?": "74868e51645f.mp3", "Where is the spider?": "f7641ccdadcd.mp3", "The spider's on the box!": "bf5b79c2e082.mp3", "Where is the lizard?": "4fa8e63c4862.mp3", "The lizard's under the box!": "81f942a4f4a8.mp3", "Where is the duck?": "2993a17d62f5.mp3", "The duck's in the box!": "df2c3f4e14a7.mp3", "Where is the cat?": "ac71cdef52e5.mp3", "The cat's on the box!": "eadbca6cdd0b.mp3", "Where is the frog?": "56396a2a1d06.mp3", "The frog's under the box!": "40f5df2d1c7a.mp3", "Tap the letters!": "eb320b5c74da.mp3", "Spell it!": "2827a6b41480.mp3"};            // text -> pre-recorded native English mp3 (Kokoro); no device voice needed
+let voice = null, player = null;
+function pickVoice(){ const v = speechSynthesis.getVoices(); voice = v.find(x => /^en(-|_)US/i.test(x.lang)) || v.find(x => /^en/i.test(x.lang)) || null; }
+if ("speechSynthesis" in window) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+function say(t){
+  try {
+    if (player) { player.pause(); player = null; }
+    if ("speechSynthesis" in window) speechSynthesis.cancel();
+    if (AUDIO[t]) { player = new Audio("audio/" + AUDIO[t]); player.play().catch(() => {}); return; }
+    if (!voice) return;               // never read English with a Spanish device voice
+    const u = new SpeechSynthesisUtterance(t); u.lang = voice.lang; u.voice = voice; u.rate = .85; speechSynthesis.speak(u);
+  } catch (e) {}
+}
+const PRAISE = ["Great!", "Well done!", "Super!", "Yes!", "Fantastic!"];
+let stars = 0, gi = 0;
+const app = document.getElementById("app");
+function addStar(){ stars++; document.getElementById("stars").textContent = "⭐ " + stars; say(PRAISE[stars % PRAISE.length]); }
+function shuffle(a, seed){ let h = 2166136261; for (const ch of seed) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); }
+  const r = () => { h ^= h << 13; h ^= h >>> 17; h ^= h << 5; return ((h >>> 0) % 1000) / 1000; };
+  a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function header(text, speak){ return `<div class="prompt"><button class="say" data-say="${speak || text}" aria-label="Listen">🔊</button><span>${text}</span></div>`; }
+function bindSay(){ app.querySelectorAll("[data-say]").forEach(b => b.onclick = () => say(b.dataset.say)); }
+function nav(){ return `<div class="nav"><button class="btn" id="back" ${gi === 0 ? "disabled" : ""}>◀</button><span>${gi + 1} / ${GAMES.length}</span><button class="btn" id="next">▶</button></div>`; }
+function bindNav(){ document.getElementById("next").onclick = () => go(gi + 1); const b = document.getElementById("back"); if (b) b.onclick = () => go(gi - 1); }
+function go(i){ gi = i; if (gi >= GAMES.length) return finish(); render(); window.scrollTo(0, 0); }
+function finish(){ app.innerHTML = `<div id="finish"><div class="big">🏆</div><p>You did it!</p><p id="final">⭐ ${stars}</p><button class="btn" id="again">Play again 🔄</button></div>`;
+  say("You did it! Great job!"); document.getElementById("again").onclick = () => { stars = 0; document.getElementById("stars").textContent = "⭐ 0"; go(0); }; }
+
+const RENDER = {
+  // Listen and tap: hear a word, tap its picture.
+  listen(g){ let k = 0; const step = () => {
+      if (k >= g.items.length) { app.innerHTML = header("All done! ▶ next game") + nav(); bindSay(); bindNav(); return; }
+      const it = g.items[k], opts = shuffle(g.items.map(x => x), g.id + k).slice(0, 4);
+      if (!opts.includes(it)) opts[0] = it;
+      app.innerHTML = header(g.title, g.say || g.title) + `<div class="prompt"><button class="say" data-say="${it.word}" id="hear">🔊</button><span>${g.ask || "Listen and tap!"}</span></div>` +
+        `<div class="grid">${shuffle(opts, g.id + "o" + k).map(o => `<div class="card" data-v="${o.word}">${pic(o.pic)}</div>`).join("")}</div>` + nav();
+      bindSay(); bindNav(); say(it.word);
+      app.querySelectorAll(".card").forEach(c => c.onclick = () => {
+        if (c.dataset.v === it.word) { c.classList.add("ok"); addStar(); k++; setTimeout(step, 700); }
+        else { c.classList.add("bad"); say("Try again!"); setTimeout(() => c.classList.remove("bad"), 400); } });
+    }; step(); },
+  // Match up: tap a picture, then its word.
+  match(g){ let sel = null, left = g.items.length;
+    app.innerHTML = header(g.title, g.say || g.title) + `<div class="grid">${shuffle(g.items, g.id + "p").map(o => `<div class="card" data-k="p" data-v="${o.word}">${pic(o.pic)}</div>`).join("")}` +
+      `${shuffle(g.items, g.id + "w").map(o => `<div class="card" data-k="w" data-v="${o.word}"><span class="lbl">${o.word}</span></div>`).join("")}</div>` + nav();
+    bindSay(); bindNav();
+    app.querySelectorAll(".card").forEach(c => c.onclick = () => {
+      if (c.dataset.k === "w") say(c.dataset.v);
+      if (!sel || sel.dataset.k === c.dataset.k) { if (sel) sel.classList.remove("sel"); sel = c; c.classList.add("sel"); return; }
+      if (sel.dataset.v === c.dataset.v) { [sel, c].forEach(x => { x.classList.remove("sel"); x.classList.add("ok", "done"); }); addStar(); left--;
+        if (!left) setTimeout(() => say("All matched!"), 500); }
+      else { c.classList.add("bad"); setTimeout(() => c.classList.remove("bad"), 400); sel.classList.remove("sel"); }
+      sel = null; }); },
+  // Memory: flip two cards; a picture and its word make a pair.
+  memory(g){ const deck = shuffle(g.items.flatMap(o => [{v:o.word, html:pic(o.pic)}, {v:o.word, html:`<span class="lbl">${o.word}</span>`}]), g.id);
+    let open = [], left = g.items.length;
+    app.innerHTML = header(g.title, g.say || g.title) + `<div class="grid">${deck.map((d, i) => `<div class="card hidden" data-i="${i}" data-v="${d.v}"></div>`).join("")}</div>` + nav();
+    bindSay(); bindNav();
+    app.querySelectorAll(".card").forEach(c => c.onclick = () => {
+      if (!c.classList.contains("hidden") || open.length === 2) return;
+      c.classList.remove("hidden"); c.innerHTML = deck[+c.dataset.i].html; say(c.dataset.v); open.push(c);
+      if (open.length === 2) { const [a, b] = open;
+        if (a.dataset.v === b.dataset.v && a !== b) { a.classList.add("ok", "done"); b.classList.add("ok", "done"); addStar(); open = []; left--; }
+        else setTimeout(() => { [a, b].forEach(x => { x.classList.add("hidden"); x.innerHTML = ""; }); open = []; }, 900); } }); },
+  // Where is it? in / on / under the box.
+  where(g){ let k = 0; const pos = { in:"left:128px;top:96px", on:"left:128px;top:22px", under:"left:128px;top:170px;font-size:44px" };
+    const step = () => {
+      if (k >= g.items.length) { app.innerHTML = header("All done! ▶ next game") + nav(); bindSay(); bindNav(); return; }
+      const it = g.items[k];
+      app.innerHTML = header(g.title, g.say || g.title) + `<div class="prompt"><button class="say" data-say="Where is the ${it.name}?">🔊</button><span>Where is the ${it.name}?</span></div>` +
+        `<div class="scene" data-answer="${it.where}"><div class="box"></div><div class="thing" style="${pos[it.where]}">${it.pic}</div></div>` +
+        `<div class="row">${["in", "on", "under"].map(w => `<button class="btn" data-v="${w}">${w.toUpperCase()}</button>`).join("")}</div>` + nav();
+      bindSay(); bindNav(); say("Where is the " + it.name + "?");
+      app.querySelectorAll(".row .btn").forEach(b => b.onclick = () => {
+        if (b.dataset.v === it.where) { b.classList.add("ok"); say(`The ${it.name}'s ${it.where} the box!`); stars++; document.getElementById("stars").textContent = "⭐ " + stars; k++; setTimeout(step, 1300); }
+        else { b.classList.add("bad"); say("Try again!"); setTimeout(() => b.classList.remove("bad"), 400); } });
+    }; step(); },
+  // Big or small: tap the one the voice asks for.
+  size(g){ let k = 0; const step = () => {
+      if (k >= g.items.length) { app.innerHTML = header("All done! ▶ next game") + nav(); bindSay(); bindNav(); return; }
+      const it = g.items[k], ask = `Tap the ${it.want} ${it.name}!`;
+      app.innerHTML = header(g.title, g.say || g.title) + `<div class="prompt"><button class="say" data-say="${ask}">🔊</button><span>${ask}</span></div>` +
+        `<div class="grid" data-answer="${it.want}">${shuffle(["big", "small"], g.id + k).map(s => `<div class="card" data-v="${s}"><span class="${s}">${it.pic}</span></div>`).join("")}</div>` + nav();
+      bindSay(); bindNav(); say(ask);
+      app.querySelectorAll(".card").forEach(c => c.onclick = () => {
+        if (c.dataset.v === it.want) { c.classList.add("ok"); addStar(); k++; setTimeout(step, 700); }
+        else { c.classList.add("bad"); say("Try again!"); setTimeout(() => c.classList.remove("bad"), 400); } });
+    }; step(); },
+  // Spell it: tap the letters in order.
+  spell(g){ let k = 0; const step = () => {
+      if (k >= g.items.length) { app.innerHTML = header("All done! ▶ next game") + nav(); bindSay(); bindNav(); return; }
+      const it = g.items[k], w = it.word.toUpperCase(); let n = 0;
+      app.innerHTML = header(g.title, g.say || g.title) + `<div class="prompt"><button class="say" data-say="${it.word}">🔊</button><span style="font-size:70px">${pic(it.pic)}</span></div>` +
+        `<div class="slots">${[...w].map(() => `<div class="slot"></div>`).join("")}</div>` +
+        `<div class="letters">${shuffle([...w].map((ch, i) => ({ch, i})), g.id + k).map(o => `<button class="letter" data-ch="${o.ch}">${o.ch}</button>`).join("")}</div>` + nav();
+      bindSay(); bindNav(); say(it.word);
+      const slots = app.querySelectorAll(".slot");
+      app.querySelectorAll(".letter").forEach(b => b.onclick = () => {
+        if (b.dataset.ch === w[n]) { slots[n].textContent = w[n]; b.disabled = true; n++;
+          if (n === w.length) { addStar(); say(it.word); k++; setTimeout(step, 1000); } }
+        else { b.classList.add("bad"); setTimeout(() => b.classList.remove("bad"), 300); } });
+    }; step(); },
+};
+function render(){ const g = GAMES[gi]; RENDER[g.type](g); }
+app.innerHTML = `<div id="start"><div class="big">🧸🔺🐶</div><p style="font-size:22px">Kids 1 · Listen, tap and play!</p><button class="btn" id="go">Start ▶</button></div>`;
+document.getElementById("go").onclick = () => { say("Let's play!"); go(0); };
+</script>
+</body>
+</html>
