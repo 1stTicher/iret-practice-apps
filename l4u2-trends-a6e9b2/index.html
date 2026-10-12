@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trends · Practice</title>
+<style>
+  :root { --wine:#722F37; --gold:#C5A059; --bg:#FFFAF0; --card:#FFFFFF; --soft:#F6ECE4; --text:#1A1A1A; --muted:#555555;
+          --ok:#2D7A4A; --okbg:#E3F1E8; --bad:#B04545; --badbg:#F8E5E5; --line:#EADFC8; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:Arial, Helvetica, sans-serif; background:var(--bg); color:var(--text); }
+  header { background:var(--wine); color:#fff; padding:14px 18px; }
+  header h1 { margin:0; font-size:22px; }
+  header p { margin:4px 0 0; font-size:14px; opacity:.9; }
+  main { max-width:860px; margin:0 auto; padding:16px; }
+  .progress { display:flex; flex-wrap:wrap; gap:6px; margin:4px 0 14px; }
+  .dot { width:34px; height:34px; border-radius:50%; border:2px solid var(--gold); background:#fff; color:var(--wine);
+         font-weight:bold; cursor:pointer; }
+  .dot.active { background:var(--wine); color:#fff; border-color:var(--wine); }
+  .dot.done { background:var(--okbg); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px; }
+  .card h2 { margin:0 0 4px; color:var(--wine); font-size:20px; }
+  .instr { margin:0 0 14px; color:var(--muted); }
+  .item { border-top:1px solid var(--line); padding:12px 0; }
+  .item:first-of-type { border-top:none; }
+  .q { font-weight:bold; margin-bottom:8px; }
+  .opts { display:flex; flex-wrap:wrap; gap:8px; }
+  .opt { border:2px solid var(--line); background:#fff; border-radius:20px; padding:7px 14px; cursor:pointer; font-size:15px; }
+  .opt.sel { border-color:var(--wine); background:var(--soft); }
+  .item.correct .opt.sel, .item.correct .answerline { border-color:var(--ok); background:var(--okbg); }
+  .item.wrong .opt.sel, .item.wrong .answerline { border-color:var(--bad); background:var(--badbg); }
+  .fb { margin-top:6px; font-size:14px; min-height:18px; }
+  .item.correct .fb { color:var(--ok); } .item.wrong .fb { color:var(--bad); }
+  .hint { display:none; margin-top:6px; font-size:14px; color:var(--wine); background:var(--soft); padding:6px 10px; border-radius:8px; }
+  .showhints .hint { display:block; }
+  .tiles { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+  .tile { border:1px solid var(--gold); background:#FBF3E4; border-radius:6px; padding:6px 10px; cursor:pointer; font-size:15px; }
+  .tile.used { visibility:hidden; }
+  .answerline { min-height:40px; border:2px dashed var(--line); border-radius:8px; padding:6px; display:flex; flex-wrap:wrap; gap:6px; }
+  .answerline .tile { background:#fff; }
+  .controls { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+  button.ctl { font-family:inherit; font-size:15px; border-radius:8px; padding:9px 14px; cursor:pointer; border:2px solid var(--wine); background:#fff; color:var(--wine); }
+  button.ctl.primary { background:var(--wine); color:#fff; }
+  .score { margin-top:10px; font-weight:bold; color:var(--wine); min-height:20px; }
+  .nav { display:flex; justify-content:space-between; margin-top:14px; }
+  .plan { display:grid; gap:6px; margin:6px 0 14px; font-size:13px; }
+  .floor { display:grid; grid-template-columns:110px repeat(4, 1fr) 70px 70px; gap:4px; align-items:stretch; }
+  .floor div { border:1px solid var(--wine); border-radius:6px; padding:6px 4px; text-align:center; background:#fff; }
+  .floor .lab { border:none; background:none; color:var(--wine); font-weight:bold; text-align:left; }
+  .floor .empty { border:none; background:none; }
+  table.sum { width:100%; border-collapse:collapse; margin-top:10px; }
+  table.sum td, table.sum th { border-bottom:1px solid var(--line); padding:8px; text-align:left; }
+  footer { text-align:center; color:var(--muted); font-size:12px; padding:18px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Trends · Practice</h1>
+  <p>Level 4 · Unit 2 — trends, fads and offers</p>
+</header>
+<main>
+  <div class="progress" id="progress"></div>
+  <div class="card" id="stage"></div>
+  <div class="nav">
+    <button class="ctl" id="back">← Back</button>
+    <button class="ctl primary" id="next">Next →</button>
+  </div>
+</main>
+<footer>Irvin Romo · English Teacher</footer>
+<script>
+const ACTIVITIES = [
+ {
+  "id": "L4U02-APP-A01",
+  "title": "Popular now or in the past?",
+  "instr": "Choose: popular now, popular in the past, or becoming popular.",
+  "type": "mcq",
+  "items": [
+   [
+    "Video rental stores are a thing of the past.",
+    [
+     "popular in the past",
+     "popular now",
+     "becoming popular"
+    ],
+    "popular in the past",
+    "a thing of the past = not common any more."
+   ],
+   [
+    "Podcasts are all the rage these days.",
+    [
+     "popular now",
+     "popular in the past",
+     "becoming popular"
+    ],
+    "popular now",
+    "be all the rage = very popular now."
+   ],
+   [
+    "Round glasses are coming back in style.",
+    [
+     "becoming popular",
+     "popular in the past",
+     "popular now"
+    ],
+    "becoming popular",
+    "Popular before, popular again."
+   ],
+   [
+    "Printed newspapers are losing popularity.",
+    [
+     "popular in the past",
+     "becoming popular",
+     "popular now"
+    ],
+    "popular in the past",
+    "Fewer people use them now."
+   ],
+   [
+    "Steel and paper straws are gaining popularity.",
+    [
+     "becoming popular",
+     "popular in the past",
+     "popular now"
+    ],
+    "becoming popular",
+    "More and more people use them."
+   ],
+   [
+    "Skinny jeans aren't very fashionable anymore.",
+    [
+     "popular in the past",
+     "popular now",
+     "becoming popular"
+    ],
+    "popular in the past",
+    "not … anymore = before, not now."
+   ]
+  ]
+ },
+ {
+  "id": "L4U02-APP-A02",
+  "title": "Trend expressions",
+  "instr": "Read the meaning. Choose the expression.",
+  "type": "mcq",
+  "items": [
+   [
+    "very popular for a short time, then forgotten",
+    [
+     "a fad",
+     "the latest thing",
+     "old-fashioned"
+    ],
+    "a fad",
+    "Fidget spinners were a fad."
+   ],
+   [
+    "very new",
+    [
+     "be the latest thing",
+     "be on the way out",
+     "be a thing of the past"
+    ],
+    "be the latest thing",
+    "Everyone wants the newest one."
+   ],
+   [
+    "going to be popular in the future",
+    [
+     "be the next big thing",
+     "go out of style",
+     "lose interest"
+    ],
+    "be the next big thing",
+    "I think VR will be the next big thing."
+   ],
+   [
+    "starting to disappear",
+    [
+     "be on the way out",
+     "be all the rage",
+     "gain popularity"
+    ],
+    "be on the way out",
+    "Old phones are on the way out."
+   ],
+   [
+    "from an earlier time; not modern",
+    [
+     "be old-fashioned",
+     "be trendy",
+     "be the latest thing"
+    ],
+    "be old-fashioned",
+    "Sending paper letters is old-fashioned."
+   ],
+   [
+    "stop being cool or popular",
+    [
+     "go out of style",
+     "come back in style",
+     "gain popularity"
+    ],
+    "go out of style",
+    "Some jokes go out of style fast."
+   ],
+   [
+    "a synonym of 'be fashionable'",
+    [
+     "be trendy",
+     "be a fad",
+     "lose interest"
+    ],
+    "be trendy",
+    "Trendy = fashionable now."
+   ]
+  ]
+ },
+ {
+  "id": "L4U02-APP-A03",
+  "title": "Complete the trend sentence",
+  "instr": "Choose the word that completes the expression.",
+  "type": "mcq",
+  "items": [
+   [
+    "The movie was slow, so after a while I lost ___.",
+    [
+     "interest",
+     "popularity",
+     "style"
+    ],
+    "interest",
+    "lose interest = stop being interested."
+   ],
+   [
+    "Electric scooters are ___ popularity in many cities.",
+    [
+     "gaining",
+     "winning",
+     "making"
+    ],
+    "gaining",
+    "gain popularity."
+   ],
+   [
+    "Fidget spinners were a ___ with young people in 2017.",
+    [
+     "fad",
+     "fade",
+     "fan"
+    ],
+    "fad",
+    "a fad = short-lived trend."
+   ],
+   [
+    "I think holograms will be the next ___ thing.",
+    [
+     "big",
+     "large",
+     "great"
+    ],
+    "big",
+    "the next big thing."
+   ],
+   [
+    "Round glasses are coming ___ in style.",
+    [
+     "back",
+     "out",
+     "up"
+    ],
+    "back",
+    "come back in style."
+   ],
+   [
+    "Old telephones are on the ___ out.",
+    [
+     "way",
+     "road",
+     "path"
+    ],
+    "way",
+    "be on the way out."
+   ]
+  ]
+ },
+ {
+  "id": "L4U02-APP-A04",
+  "title": "Offers and responses",
+  "instr": "Complete the exchange at the school fair.",
+  "type": "mcq",
+  "items": [
+   [
+    "A: ___ you something to drink? B: Yes, please. Water is fine.",
+    [
+     "Can I get",
+     "Do I get",
+     "Can you get"
+    ],
+    "Can I get",
+    "Offer: Can I get you …?"
+   ],
+   [
+    "A: Would you like pineapple? B: ___",
+    [
+     "No, but thanks anyway.",
+     "No, I don't want.",
+     "Not thanks."
+    ],
+    "No, but thanks anyway.",
+    "A polite refusal."
+   ],
+   [
+    "A: Here are the labeled samples. ___ B: Thanks!",
+    [
+     "Help yourself.",
+     "Help you.",
+     "Take yourself."
+    ],
+    "Help yourself.",
+    "Take what you want."
+   ],
+   [
+    "A: Can I offer you a taste? B: ___",
+    [
+     "That'd be wonderful.",
+     "That's wonderful be.",
+     "It would wonderful."
+    ],
+    "That'd be wonderful.",
+    "Accepting politely."
+   ],
+   [
+    "A: Another water, please. B: ___",
+    [
+     "Coming right up.",
+     "Coming up right.",
+     "It comes."
+    ],
+    "Coming right up.",
+    "I'll bring it now."
+   ],
+   [
+    "A: Could I have a refill? B: One sec. I'll be right ___ with that.",
+    [
+     "back",
+     "there",
+     "here"
+    ],
+    "back",
+    "I'll be right back."
+   ]
+  ]
+ },
+ {
+  "id": "L4U02-APP-A05",
+  "title": "Build the sentence",
+  "instr": "Tap the parts in the right order. Tap a part again to remove it.",
+  "type": "order",
+  "items": [
+   [
+    [
+     "Video rental stores",
+     "are",
+     "a thing of the past"
+    ],
+    "Video rental stores are a thing of the past",
+    "Subject + be + expression."
+   ],
+   [
+    [
+     "I think",
+     "virtual reality",
+     "will be",
+     "the next big thing"
+    ],
+    "I think virtual reality will be the next big thing",
+    "I think + will."
+   ],
+   [
+    [
+     "Can I get you",
+     "something",
+     "to drink?"
+    ],
+    "Can I get you something to drink?",
+    "An offer."
+   ],
+   [
+    [
+     "Round glasses",
+     "are coming back",
+     "in style"
+    ],
+    "Round glasses are coming back in style",
+    "come back in style."
+   ]
+  ]
+ }
+];
+
+// deterministic shuffle so the correct option is not always first
+function seeded(s){ let h=2166136261; for(const c of s){ h^=c.charCodeAt(0); h=Math.imul(h,16777619);} return ()=>{ h^=h<<13; h^=h>>>17; h^=h<<5; return ((h>>>0)%1000)/1000; }; }
+function shuffle(arr, key){ const r=seeded(key), a=arr.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(r()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+const state = ACTIVITIES.map(a => ({answers:a.items.map(()=>a.type==='order'?[]:null), checked:false, score:null, hints:false}));
+let current = 0, finished = false;
+const stage = document.getElementById('stage');
+
+function planHTML(){
+  const f=(label, rooms)=>`<div class="floor"><div class="lab">${label}</div>${rooms.map(r=>r?`<div>${r}</div>`:'<div class="empty"></div>').join('')}<div>stairs</div><div>elevator</div></div>`;
+  return `<div class="plan" aria-label="Restaurant floor plan">${f('Second floor',['office','staff room','',''])}${f('Ground floor',['entrance + lobby','kitchen','dining room','restroom'])}${f('Basement',['storage room','cold room','',''])}<div style="color:var(--muted)">On the ground floor, the hallway goes from the lobby to the stairs. The rooms are on your right.</div></div>`;
+}
+
+function render(){
+  renderProgress();
+  if(finished){ return renderSummary(); }
+  const a=ACTIVITIES[current], s=state[current];
+  let html=`<h2>${current+1}. ${a.title}</h2><p class="instr">${a.instr}</p>${a.plan?planHTML():''}<div class="items ${s.hints?'showhints':''}" data-activity="${a.id}" data-targets="${a.targets}">`;
+  a.items.forEach((it,i)=>{
+    if(a.type==='mcq'){
+      const opts=shuffle(it[1], a.id+i);
+      html+=`<div class="item" data-i="${i}"><div class="q">${i+1}. ${it[0]}</div><div class="opts">${opts.map(o=>`<button class="opt${s.answers[i]===o?' sel':''}" data-v="${encodeURIComponent(o)}">${o}</button>`).join('')}</div><div class="hint">Hint: ${it[3]}</div><div class="fb"></div></div>`;
+    } else {
+      const tiles=shuffle(it[0], a.id+i), used=s.answers[i];
+      html+=`<div class="item" data-i="${i}"><div class="q">${i+1}.</div><div class="tiles">${tiles.map((w,k)=>`<button class="tile${used.includes(k)?' used':''}" data-k="${k}">${w}</button>`).join('')}</div><div class="answerline">${used.map(k=>`<button class="tile placed" data-k="${k}">${tiles[k]}</button>`).join('')}</div><div class="hint">Hint: ${it[2]}</div><div class="fb"></div></div>`;
+    }
+  });
+  html+=`</div><div class="controls"><button class="ctl" id="hint">Hint</button><button class="ctl primary" id="check">Check</button><button class="ctl" id="show">Show answers</button><button class="ctl" id="retry">Try again</button></div><div class="score" id="score">${s.score!==null?scoreText(s.score,a.items.length):''}</div>`;
+  stage.innerHTML=html;
+  if(s.checked) paintCheck(false);
+  bind();
+  document.getElementById('back').disabled = current===0;
+  document.getElementById('next').textContent = current===ACTIVITIES.length-1 ? 'Finish ✓' : 'Next →';
+}
+
+function renderProgress(){
+  const p=document.getElementById('progress');
+  p.innerHTML=ACTIVITIES.map((a,i)=>`<button class="dot${i===current&&!finished?' active':''}${state[i].checked?' done':''}" data-go="${i}" title="${a.title}">${i+1}</button>`).join('');
+  p.querySelectorAll('.dot').forEach(d=>d.onclick=()=>{ finished=false; current=+d.dataset.go; render(); });
+}
+
+function tilesFor(i){ const a=ACTIVITIES[current]; return shuffle(a.items[i][0], a.id+i); }
+
+function bind(){
+  const a=ACTIVITIES[current], s=state[current];
+  stage.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{ const i=+b.closest('.item').dataset.i; s.answers[i]=decodeURIComponent(b.dataset.v); s.checked=false; s.score=null; render(); });
+  stage.querySelectorAll('.tiles .tile').forEach(b=>b.onclick=()=>{ const i=+b.closest('.item').dataset.i, k=+b.dataset.k; if(!s.answers[i].includes(k)) s.answers[i].push(k); s.checked=false; s.score=null; render(); });
+  stage.querySelectorAll('.answerline .tile').forEach(b=>b.onclick=()=>{ const i=+b.closest('.item').dataset.i, k=+b.dataset.k; s.answers[i]=s.answers[i].filter(x=>x!==k); s.checked=false; s.score=null; render(); });
+  document.getElementById('hint').onclick=()=>{ s.hints=!s.hints; render(); };
+  document.getElementById('check').onclick=()=>{ s.checked=true; s.score=countCorrect(); render(); };
+  document.getElementById('show').onclick=()=>{ showAnswers(); s.checked=true; s.score=countCorrect(); s.revealed=true; render(); };
+  document.getElementById('retry').onclick=()=>{ state[current]={answers:a.items.map(()=>a.type==='order'?[]:null), checked:false, score:null, hints:false}; render(); };
+}
+
+function isCorrect(i){
+  const a=ACTIVITIES[current], s=state[current], it=a.items[i];
+  if(a.type==='mcq') return s.answers[i]===it[2];
+  const tiles=tilesFor(i); return s.answers[i].map(k=>tiles[k]).join(' ')===it[1];
+}
+function countCorrect(){ return ACTIVITIES[current].items.reduce((n,_,i)=>n+(isCorrect(i)?1:0),0); }
+function scoreText(n,t){ return `Score: ${n} / ${t}` + (n===t?' — excellent!':''); }
+
+function paintCheck(){
+  const a=ACTIVITIES[current], s=state[current];
+  stage.querySelectorAll('.item').forEach(el=>{
+    const i=+el.dataset.i, ok=isCorrect(i), empty=a.type==='mcq'?s.answers[i]===null:s.answers[i].length===0;
+    el.classList.add(ok?'correct':'wrong');
+    const right=a.type==='mcq'?a.items[i][2]:a.items[i][1].replace(' ?','?');
+    el.querySelector('.fb').textContent = ok ? 'Correct!' : (empty ? 'Choose an answer. ' : 'Not yet. ') + (s.revealed ? 'Answer: '+right : 'Try the hint.');
+  });
+}
+
+function showAnswers(){
+  const a=ACTIVITIES[current], s=state[current];
+  a.items.forEach((it,i)=>{
+    if(a.type==='mcq') s.answers[i]=it[2];
+    else { s.answers[i]=tileOrder(tilesFor(i), it[1]); }
+  });
+}
+
+// Tile indexes that spell the answer; tiles can hold more than one word ("my motorcycle").
+function tileOrder(tiles, answer){
+  const taken=[]; let rest=answer;
+  while(rest.length){
+    const k=tiles.map((t,idx)=>idx).filter(idx=>!taken.includes(idx)&&(rest===tiles[idx]||rest.startsWith(tiles[idx]+' ')))
+                 .sort((x,y)=>tiles[y].length-tiles[x].length)[0];
+    if(k===undefined) break;
+    taken.push(k); rest=rest.slice(tiles[k].length).trimStart();
+  }
+  return taken;
+}
+
+function renderSummary(){
+  const total=ACTIVITIES.reduce((n,a)=>n+a.items.length,0);
+  const got=state.reduce((n,s)=>n+(s.score||0),0);
+  stage.innerHTML=`<h2>Well done!</h2><p class="instr">Here is your score for each activity. Choose an activity to practice again.</p>
+   <table class="sum"><tr><th>Activity</th><th>Score</th></tr>${ACTIVITIES.map((a,i)=>`<tr><td>${i+1}. ${a.title}</td><td>${state[i].score===null?'not checked':state[i].score+' / '+a.items.length}</td></tr>`).join('')}
+   <tr><th>Total</th><th id="total">${got} / ${total}</th></tr></table>
+   <div class="controls"><button class="ctl primary" id="restart">Start again</button></div>`;
+  document.getElementById('restart').onclick=()=>{ ACTIVITIES.forEach((a,i)=>state[i]={answers:a.items.map(()=>a.type==='order'?[]:null), checked:false, score:null, hints:false}); finished=false; current=0; render(); };
+  document.getElementById('back').disabled=false;
+  document.getElementById('next').textContent='Finish ✓';
+}
+
+document.getElementById('back').onclick=()=>{ if(finished){ finished=false; } else if(current>0){ current--; } render(); };
+document.getElementById('next').onclick=()=>{ if(current<ACTIVITIES.length-1 && !finished){ current++; } else { finished=true; } render(); };
+render();
+</script>
+</body>
+</html>
