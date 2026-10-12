@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Economic Indicators · Practice</title>
+<style>
+  :root { --wine:#722F37; --gold:#C5A059; --bg:#FFFAF0; --card:#FFFFFF; --soft:#F6ECE4; --text:#1A1A1A; --muted:#555555;
+          --ok:#2D7A4A; --okbg:#E3F1E8; --bad:#B04545; --badbg:#F8E5E5; --line:#EADFC8; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:Arial, Helvetica, sans-serif; background:var(--bg); color:var(--text); }
+  header { background:var(--wine); color:#fff; padding:14px 18px; }
+  header h1 { margin:0; font-size:22px; }
+  header p { margin:4px 0 0; font-size:14px; opacity:.9; }
+  main { max-width:860px; margin:0 auto; padding:16px; }
+  .progress { display:flex; flex-wrap:wrap; gap:6px; margin:4px 0 14px; }
+  .dot { width:34px; height:34px; border-radius:50%; border:2px solid var(--gold); background:#fff; color:var(--wine);
+         font-weight:bold; cursor:pointer; }
+  .dot.active { background:var(--wine); color:#fff; border-color:var(--wine); }
+  .dot.done { background:var(--okbg); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px; }
+  .card h2 { margin:0 0 4px; color:var(--wine); font-size:20px; }
+  .instr { margin:0 0 14px; color:var(--muted); }
+  .item { border-top:1px solid var(--line); padding:12px 0; }
+  .item:first-of-type { border-top:none; }
+  .q { font-weight:bold; margin-bottom:8px; }
+  .opts { display:flex; flex-wrap:wrap; gap:8px; }
+  .opt { border:2px solid var(--line); background:#fff; border-radius:20px; padding:7px 14px; cursor:pointer; font-size:15px; }
+  .opt.sel { border-color:var(--wine); background:var(--soft); }
+  .item.correct .opt.sel, .item.correct .answerline { border-color:var(--ok); background:var(--okbg); }
+  .item.wrong .opt.sel, .item.wrong .answerline { border-color:var(--bad); background:var(--badbg); }
+  .fb { margin-top:6px; font-size:14px; min-height:18px; }
+  .item.correct .fb { color:var(--ok); } .item.wrong .fb { color:var(--bad); }
+  .hint { display:none; margin-top:6px; font-size:14px; color:var(--wine); background:var(--soft); padding:6px 10px; border-radius:8px; }
+  .showhints .hint { display:block; }
+  .tiles { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+  .tile { border:1px solid var(--gold); background:#FBF3E4; border-radius:6px; padding:6px 10px; cursor:pointer; font-size:15px; }
+  .tile.used { visibility:hidden; }
+  .answerline { min-height:40px; border:2px dashed var(--line); border-radius:8px; padding:6px; display:flex; flex-wrap:wrap; gap:6px; }
+  .answerline .tile { background:#fff; }
+  .controls { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+  button.ctl { font-family:inherit; font-size:15px; border-radius:8px; padding:9px 14px; cursor:pointer; border:2px solid var(--wine); background:#fff; color:var(--wine); }
+  button.ctl.primary { background:var(--wine); color:#fff; }
+  .score { margin-top:10px; font-weight:bold; color:var(--wine); min-height:20px; }
+  .nav { display:flex; justify-content:space-between; margin-top:14px; }
+  .plan { display:grid; gap:6px; margin:6px 0 14px; font-size:13px; }
+  .floor { display:grid; grid-template-columns:110px repeat(4, 1fr) 70px 70px; gap:4px; align-items:stretch; }
+  .floor div { border:1px solid var(--wine); border-radius:6px; padding:6px 4px; text-align:center; background:#fff; }
+  .floor .lab { border:none; background:none; color:var(--wine); font-weight:bold; text-align:left; }
+  .floor .empty { border:none; background:none; }
+  table.sum { width:100%; border-collapse:collapse; margin-top:10px; }
+  table.sum td, table.sum th { border-bottom:1px solid var(--line); padding:8px; text-align:left; }
+  footer { text-align:center; color:var(--muted); font-size:12px; padding:18px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Economic Indicators · Practice</h1>
+  <p>Finance English 9 · Unit 9 — growth, inflation, monetary and fiscal policy, cause and effect</p>
+</header>
+<main>
+  <div class="progress" id="progress"></div>
+  <div class="card" id="stage"></div>
+  <div class="nav">
+    <button class="ctl" id="back">← Back</button>
+    <button class="ctl primary" id="next">Next →</button>
+  </div>
+</main>
+<footer>Irvin Romo · English Teacher</footer>
+<script>
+const ACTIVITIES = [
+ {
+  "id": "FIN9U09-APP-A01",
+  "title": "Output and growth",
+  "instr": "Read the definition. Choose the term.",
+  "type": "mcq",
+  "items": [
+   [
+    "the value of final goods and services produced within a country's borders in a period",
+    [
+     "GDP",
+     "GNP",
+     "potential output"
+    ],
+    "GDP",
+    "Focus: WHERE (inside the borders)."
+   ],
+   [
+    "GDP plus net primary income earned by residents from abroad",
+    [
+     "GNP",
+     "GDP",
+     "CPI"
+    ],
+    "GNP",
+    "Focus: WHO (residents)."
+   ],
+   [
+    "the production level an economy can sustain without persistent inflationary pressure",
+    [
+     "potential output",
+     "expansion",
+     "business cycle"
+    ],
+    "potential output",
+    "Below it = spare capacity."
+   ],
+   [
+    "a phase in which output, employment, income and investment generally rise",
+    [
+     "expansion",
+     "recession",
+     "trough"
+    ],
+    "expansion",
+    "The economy is growing."
+   ],
+   [
+    "a broad and persistent decline in economic activity",
+    [
+     "recession",
+     "expansion",
+     "deflation"
+    ],
+    "recession",
+    "Two negative quarters is a rule of thumb."
+   ],
+   [
+    "recurring fluctuations: expansion, peak, contraction, trough and recovery",
+    [
+     "business cycle",
+     "multiplier effect",
+     "fiscal policy"
+    ],
+    "business cycle",
+    "Firms use it to plan hiring and investment."
+   ]
+  ]
+ },
+ {
+  "id": "FIN9U09-APP-A02",
+  "title": "Prices and inflation",
+  "instr": "Read the definition. Choose the term.",
+  "type": "mcq",
+  "items": [
+   [
+    "an index tracking the average change in prices paid by consumers for a basket",
+    [
+     "CPI",
+     "GDP",
+     "core inflation"
+    ],
+    "CPI",
+    "Consumer Price Index."
+   ],
+   [
+    "a sustained rise in the general price level",
+    [
+     "inflation",
+     "deflation",
+     "stagflation"
+    ],
+    "inflation",
+    "Not just one product."
+   ],
+   [
+    "a sustained decline in the general price level",
+    [
+     "deflation",
+     "inflation",
+     "austerity"
+    ],
+    "deflation",
+    "Consumers may delay purchases."
+   ],
+   [
+    "high inflation combined with weak growth and often rising unemployment",
+    [
+     "stagflation",
+     "deflation",
+     "expansion"
+    ],
+    "stagflation",
+    "The 1970s oil crisis."
+   ],
+   [
+    "the quantity of goods and services a unit of income can buy",
+    [
+     "purchasing power",
+     "potential output",
+     "policy rate"
+    ],
+    "purchasing power",
+    "Inflation erodes it."
+   ],
+   [
+    "inflation excluding volatile items, to show persistent price pressure",
+    [
+     "core inflation",
+     "headline inflation",
+     "CPI basket"
+    ],
+    "core inflation",
+    "It removes items like energy."
+   ]
+  ]
+ },
+ {
+  "id": "FIN9U09-APP-A03",
+  "title": "Monetary policy",
+  "instr": "Read the definition. Choose the term.",
+  "type": "mcq",
+  "items": [
+   [
+    "favouring tighter policy because inflation risks seem more serious",
+    [
+     "hawkish",
+     "dovish",
+     "austere"
+    ],
+    "hawkish",
+    "Rates may stay high or rise."
+   ],
+   [
+    "favouring looser policy because growth or employment risks seem more serious",
+    [
+     "dovish",
+     "hawkish",
+     "fiscal"
+    ],
+    "dovish",
+    "More willing to cut rates."
+   ],
+   [
+    "large-scale asset purchases when ordinary rate cuts are not enough",
+    [
+     "quantitative easing",
+     "fiscal stimulus",
+     "austerity"
+    ],
+    "quantitative easing",
+    "QE lowers longer-term yields."
+   ],
+   [
+    "the central bank's benchmark rate",
+    [
+     "policy rate",
+     "reserve requirement",
+     "multiplier"
+    ],
+    "policy rate",
+    "It influences market rates."
+   ],
+   [
+    "the share of deposits banks must hold rather than lend",
+    [
+     "reserve requirement",
+     "budget deficit",
+     "policy rate"
+    ],
+    "reserve requirement",
+    "It affects liquidity."
+   ]
+  ]
+ },
+ {
+  "id": "FIN9U09-APP-A04",
+  "title": "Fiscal policy",
+  "instr": "Read the definition. Choose the term.",
+  "type": "mcq",
+  "items": [
+   [
+    "government decisions on spending and taxation",
+    [
+     "fiscal policy",
+     "monetary policy",
+     "business cycle"
+    ],
+    "fiscal policy",
+    "Government, not the central bank."
+   ],
+   [
+    "a year in which government spending is higher than revenue",
+    [
+     "budget deficit",
+     "national debt",
+     "austerity"
+    ],
+    "budget deficit",
+    "A flow, not a stock."
+   ],
+   [
+    "spending or tax measures to support aggregate demand",
+    [
+     "fiscal stimulus",
+     "austerity",
+     "deflation"
+    ],
+    "fiscal stimulus",
+    "Expansionary measures."
+   ],
+   [
+    "measures to reduce deficits or debt, e.g. spending cuts or tax increases",
+    [
+     "austerity",
+     "stimulus",
+     "quantitative easing"
+    ],
+    "austerity",
+    "It can weaken demand in a downturn."
+   ],
+   [
+    "the stock of outstanding government liabilities",
+    [
+     "national debt",
+     "budget deficit",
+     "GNP"
+    ],
+    "national debt",
+    "Often measured relative to GDP."
+   ],
+   [
+    "the total change in output after an initial change in spending or taxation",
+    [
+     "multiplier effect",
+     "business cycle",
+     "purchasing power"
+    ],
+    "multiplier effect",
+    "Above one = output grows more than the impulse."
+   ]
+  ]
+ },
+ {
+  "id": "FIN9U09-APP-A05",
+  "title": "Cause and effect",
+  "instr": "Choose the connector that completes the economic chain.",
+  "type": "mcq",
+  "items": [
+   [
+    "A 300bps rate increase ___ higher mortgage payments and weaker housing demand.",
+    [
+     "leads to",
+     "leads",
+     "is leading"
+    ],
+    "leads to",
+    "leads to + noun phrase."
+   ],
+   [
+    "Lower tax revenues ___ fiscal pressure.",
+    [
+     "give rise to",
+     "give rise",
+     "rise to"
+    ],
+    "give rise to",
+    "give rise to + noun."
+   ],
+   [
+    "An export boom ___ currency appreciation.",
+    [
+     "drives",
+     "drives to",
+     "results"
+    ],
+    "drives",
+    "drive + object (no preposition)."
+   ],
+   [
+    "Hyperinflation ___ the destruction of savings.",
+    [
+     "results in",
+     "results to",
+     "results"
+    ],
+    "results in",
+    "result in + noun."
+   ],
+   [
+    "Rising wages in a tight labour market may ___ demand-pull inflation.",
+    [
+     "drive",
+     "lead",
+     "result"
+    ],
+    "drive",
+    "drive + noun."
+   ],
+   [
+    "Tighter monetary policy leads to higher borrowing costs, which ___ lower investment.",
+    [
+     "result in",
+     "result from",
+     "rise to"
+    ],
+    "result in",
+    "cause → result in → effect."
+   ]
+  ]
+ },
+ {
+  "id": "FIN9U09-APP-A06",
+  "title": "Passive for announcements",
+  "instr": "Choose the passive sentence that focuses on the measure.",
+  "type": "mcq",
+  "items": [
+   [
+    "The central bank raised rates by 150bps.",
+    [
+     "Rates were raised by 150bps.",
+     "Rates raised by 150bps.",
+     "Rates were raise by 150bps."
+    ],
+    "Rates were raised by 150bps.",
+    "be + past participle."
+   ],
+   [
+    "The government announced a fiscal package on Tuesday.",
+    [
+     "A fiscal package was announced on Tuesday.",
+     "A fiscal package announced on Tuesday.",
+     "A fiscal package was announce on Tuesday."
+    ],
+    "A fiscal package was announced on Tuesday.",
+    "Focus on the package."
+   ],
+   [
+    "Analysts revised growth forecasts downward.",
+    [
+     "Growth forecasts were revised downward.",
+     "Growth forecasts revised downward.",
+     "Growth forecasts was revised downward."
+    ],
+    "Growth forecasts were revised downward.",
+    "Plural → were."
+   ],
+   [
+    "The ministry implemented new tax measures from January.",
+    [
+     "New tax measures were implemented from January.",
+     "New tax measures implemented from January.",
+     "New tax measures have implement from January."
+    ],
+    "New tax measures were implemented from January.",
+    "Add 'by the ministry' only if accountability matters."
+   ],
+   [
+    "When should you keep the by-agent?",
+    [
+     "when accountability matters",
+     "always",
+     "never"
+    ],
+    "when accountability matters",
+    "Who did it is important."
+   ]
+  ]
+ },
+ {
+  "id": "FIN9U09-APP-A07",
+  "title": "Build the analysis",
+  "instr": "Tap the parts in the right order. Tap a part again to remove it.",
+  "type": "order",
+  "items": [
+   [
+    [
+     "Tighter monetary policy",
+     "leads to",
+     "higher borrowing costs"
+    ],
+    "Tighter monetary policy leads to higher borrowing costs",
+    "cause + leads to + effect."
+   ],
+   [
+    [
+     "Growth projections",
+     "were revised",
+     "downward"
+    ],
+    "Growth projections were revised downward",
+    "Passive: focus on the result."
+   ],
+   [
+    [
+     "High inflation",
+     "erodes",
+     "purchasing power"
+    ],
+    "High inflation erodes purchasing power",
+    "inflation → lower purchasing power."
+   ]
+  ]
+ }
+];
+
+// deterministic shuffle so the correct option is not always first
+function seeded(s){ let h=2166136261; for(const c of s){ h^=c.charCodeAt(0); h=Math.imul(h,16777619);} return ()=>{ h^=h<<13; h^=h>>>17; h^=h<<5; return ((h>>>0)%1000)/1000; }; }
+function shuffle(arr, key){ const r=seeded(key), a=arr.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(r()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+const state = ACTIVITIES.map(a => ({answers:a.items.map(()=>a.type==='order'?[]:null), checked:false, score:null, hints:false}));
+let current = 0, finished = false;
+const stage = document.getElementById('stage');
+
+function planHTML(){
+  const f=(label, rooms)=>`<div class="floor"><div class="lab">${label}</div>${rooms.map(r=>r?`<div>${r}</div>`:'<div class="empty"></div>').join('')}<div>stairs</div><div>elevator</div></div>`;
+  return `<div class="plan" aria-label="Restaurant floor plan">${f('Second floor',['office','staff room','',''])}${f('Ground floor',['entrance + lobby','kitchen','dining room','restroom'])}${f('Basement',['storage room','cold room','',''])}<div style="color:var(--muted)">On the ground floor, the hallway goes from the lobby to the stairs. The rooms are on your right.</div></div>`;
+}
+
+function render(){
+  renderProgress();
+  if(finished){ return renderSummary(); }
+  const a=ACTIVITIES[current], s=state[current];
+  let html=`<h2>${current+1}. ${a.title}</h2><p class="instr">${a.instr}</p>${a.plan?planHTML():''}<div class="items ${s.hints?'showhints':''}" data-activity="${a.id}" data-targets="${a.targets}">`;
+  a.items.forEach((it,i)=>{
+    if(a.type==='mcq'){
+      const opts=shuffle(it[1], a.id+i);
+      html+=`<div class="item" data-i="${i}"><div class="q">${i+1}. ${it[0]}</div><div class="opts">${opts.map(o=>`<button class="opt${s.answers[i]===o?' sel':''}" data-v="${encodeURIComponent(o)}">${o}</button>`).join('')}</div><div class="hint">Hint: ${it[3]}</div><div class="fb"></div></div>`;
+    } else {
+      const tiles=shuffle(it[0], a.id+i), used=s.answers[i];
+      html+=`<div class="item" data-i="${i}"><div class="q">${i+1}.</div><div class="tiles">${tiles.map((w,k)=>`<button class="tile${used.includes(k)?' used':''}" data-k="${k}">${w}</button>`).join('')}</div><div class="answerline">${used.map(k=>`<button class="tile placed" data-k="${k}">${tiles[k]}</button>`).join('')}</div><div class="hint">Hint: ${it[2]}</div><div class="fb"></div></div>`;
+    }
+  });
+  html+=`</div><div class="controls"><button class="ctl" id="hint">Hint</button><button class="ctl primary" id="check">Check</button><button class="ctl" id="show">Show answers</button><button class="ctl" id="retry">Try again</button></div><div class="score" id="score">${s.score!==null?scoreText(s.score,a.items.length):''}</div>`;
+  stage.innerHTML=html;
+  if(s.checked) paintCheck(false);
+  bind();
+  document.getElementById('back').disabled = current===0;
+  document.getElementById('next').textContent = current===ACTIVITIES.length-1 ? 'Finish ✓' : 'Next →';
+}
+
+function renderProgress(){
+  const p=document.getElementById('progress');
+  p.innerHTML=ACTIVITIES.map((a,i)=>`<button class="dot${i===current&&!finished?' active':''}${state[i].checked?' done':''}" data-go="${i}" title="${a.title}">${i+1}</button>`).join('');
+  p.querySelectorAll('.dot').forEach(d=>d.onclick=()=>{ finished=false; current=+d.dataset.go; render(); });
+}
+
+function tilesFor(i){ const a=ACTIVITIES[current]; return shuffle(a.items[i][0], a.id+i); }
+
+function bind(){
+  const a=ACTIVITIES[current], s=state[current];
+  stage.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{ const i=+b.closest('.item').dataset.i; s.answers[i]=decodeURIComponent(b.dataset.v); s.checked=false; s.score=null; render(); });
+  stage.querySelectorAll('.tiles .tile').forEach(b=>b.onclick=()=>{ const i=+b.closest('.item').dataset.i, k=+b.dataset.k; if(!s.answers[i].includes(k)) s.answers[i].push(k); s.checked=false; s.score=null; render(); });
+  stage.querySelectorAll('.answerline .tile').forEach(b=>b.onclick=()=>{ const i=+b.closest('.item').dataset.i, k=+b.dataset.k; s.answers[i]=s.answers[i].filter(x=>x!==k); s.checked=false; s.score=null; render(); });
+  document.getElementById('hint').onclick=()=>{ s.hints=!s.hints; render(); };
+  document.getElementById('check').onclick=()=>{ s.checked=true; s.score=countCorrect(); render(); };
+  document.getElementById('show').onclick=()=>{ showAnswers(); s.checked=true; s.score=countCorrect(); s.revealed=true; render(); };
+  document.getElementById('retry').onclick=()=>{ state[current]={answers:a.items.map(()=>a.type==='order'?[]:null), checked:false, score:null, hints:false}; render(); };
+}
+
+function isCorrect(i){
+  const a=ACTIVITIES[current], s=state[current], it=a.items[i];
+  if(a.type==='mcq') return s.answers[i]===it[2];
+  const tiles=tilesFor(i); return s.answers[i].map(k=>tiles[k]).join(' ')===it[1];
+}
+function countCorrect(){ return ACTIVITIES[current].items.reduce((n,_,i)=>n+(isCorrect(i)?1:0),0); }
+function scoreText(n,t){ return `Score: ${n} / ${t}` + (n===t?' — excellent!':''); }
+
+function paintCheck(){
+  const a=ACTIVITIES[current], s=state[current];
+  stage.querySelectorAll('.item').forEach(el=>{
+    const i=+el.dataset.i, ok=isCorrect(i), empty=a.type==='mcq'?s.answers[i]===null:s.answers[i].length===0;
+    el.classList.add(ok?'correct':'wrong');
+    const right=a.type==='mcq'?a.items[i][2]:a.items[i][1].replace(' ?','?');
+    el.querySelector('.fb').textContent = ok ? 'Correct!' : (empty ? 'Choose an answer. ' : 'Not yet. ') + (s.revealed ? 'Answer: '+right : 'Try the hint.');
+  });
+}
+
+function showAnswers(){
+  const a=ACTIVITIES[current], s=state[current];
+  a.items.forEach((it,i)=>{
+    if(a.type==='mcq') s.answers[i]=it[2];
+    else { s.answers[i]=tileOrder(tilesFor(i), it[1]); }
+  });
+}
+
+// Tile indexes that spell the answer; tiles can hold more than one word ("my motorcycle").
+function tileOrder(tiles, answer){
+  const taken=[]; let rest=answer;
+  while(rest.length){
+    const k=tiles.map((t,idx)=>idx).filter(idx=>!taken.includes(idx)&&(rest===tiles[idx]||rest.startsWith(tiles[idx]+' ')))
+                 .sort((x,y)=>tiles[y].length-tiles[x].length)[0];
+    if(k===undefined) break;
+    taken.push(k); rest=rest.slice(tiles[k].length).trimStart();
+  }
+  return taken;
+}
+
+function renderSummary(){
+  const total=ACTIVITIES.reduce((n,a)=>n+a.items.length,0);
+  const got=state.reduce((n,s)=>n+(s.score||0),0);
+  stage.innerHTML=`<h2>Well done!</h2><p class="instr">Here is your score for each activity. Choose an activity to practice again.</p>
+   <table class="sum"><tr><th>Activity</th><th>Score</th></tr>${ACTIVITIES.map((a,i)=>`<tr><td>${i+1}. ${a.title}</td><td>${state[i].score===null?'not checked':state[i].score+' / '+a.items.length}</td></tr>`).join('')}
+   <tr><th>Total</th><th id="total">${got} / ${total}</th></tr></table>
+   <div class="controls"><button class="ctl primary" id="restart">Start again</button></div>`;
+  document.getElementById('restart').onclick=()=>{ ACTIVITIES.forEach((a,i)=>state[i]={answers:a.items.map(()=>a.type==='order'?[]:null), checked:false, score:null, hints:false}); finished=false; current=0; render(); };
+  document.getElementById('back').disabled=false;
+  document.getElementById('next').textContent='Finish ✓';
+}
+
+document.getElementById('back').onclick=()=>{ if(finished){ finished=false; } else if(current>0){ current--; } render(); };
+document.getElementById('next').onclick=()=>{ if(current<ACTIVITIES.length-1 && !finished){ current++; } else { finished=true; } render(); };
+render();
+</script>
+</body>
+</html>
