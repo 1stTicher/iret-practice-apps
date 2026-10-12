@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Time and Money · Practice</title>
+<style>
+  :root { --wine:#722F37; --gold:#C5A059; --bg:#FFFAF0; --card:#FFFFFF; --soft:#F6ECE4; --text:#1A1A1A; --muted:#555555;
+          --ok:#2D7A4A; --okbg:#E3F1E8; --bad:#B04545; --badbg:#F8E5E5; --line:#EADFC8; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:Arial, Helvetica, sans-serif; background:var(--bg); color:var(--text); }
+  header { background:var(--wine); color:#fff; padding:14px 18px; }
+  header h1 { margin:0; font-size:22px; }
+  header p { margin:4px 0 0; font-size:14px; opacity:.9; }
+  main { max-width:860px; margin:0 auto; padding:16px; }
+  .progress { display:flex; flex-wrap:wrap; gap:6px; margin:4px 0 14px; }
+  .dot { width:34px; height:34px; border-radius:50%; border:2px solid var(--gold); background:#fff; color:var(--wine);
+         font-weight:bold; cursor:pointer; }
+  .dot.active { background:var(--wine); color:#fff; border-color:var(--wine); }
+  .dot.done { background:var(--okbg); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px; }
+  .card h2 { margin:0 0 4px; color:var(--wine); font-size:20px; }
+  .instr { margin:0 0 14px; color:var(--muted); }
+  .item { border-top:1px solid var(--line); padding:12px 0; }
+  .item:first-of-type { border-top:none; }
+  .q { font-weight:bold; margin-bottom:8px; }
+  .opts { display:flex; flex-wrap:wrap; gap:8px; }
+  .opt { border:2px solid var(--line); background:#fff; border-radius:20px; padding:7px 14px; cursor:pointer; font-size:15px; }
+  .opt.sel { border-color:var(--wine); background:var(--soft); }
+  .item.correct .opt.sel, .item.correct .answerline { border-color:var(--ok); background:var(--okbg); }
+  .item.wrong .opt.sel, .item.wrong .answerline { border-color:var(--bad); background:var(--badbg); }
+  .fb { margin-top:6px; font-size:14px; min-height:18px; }
+  .item.correct .fb { color:var(--ok); } .item.wrong .fb { color:var(--bad); }
+  .hint { display:none; margin-top:6px; font-size:14px; color:var(--wine); background:var(--soft); padding:6px 10px; border-radius:8px; }
+  .showhints .hint { display:block; }
+  .tiles { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+  .tile { border:1px solid var(--gold); background:#FBF3E4; border-radius:6px; padding:6px 10px; cursor:pointer; font-size:15px; }
+  .tile.used { visibility:hidden; }
+  .answerline { min-height:40px; border:2px dashed var(--line); border-radius:8px; padding:6px; display:flex; flex-wrap:wrap; gap:6px; }
+  .answerline .tile { background:#fff; }
+  .controls { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+  button.ctl { font-family:inherit; font-size:15px; border-radius:8px; padding:9px 14px; cursor:pointer; border:2px solid var(--wine); background:#fff; color:var(--wine); }
+  button.ctl.primary { background:var(--wine); color:#fff; }
+  .score { margin-top:10px; font-weight:bold; color:var(--wine); min-height:20px; }
+  .nav { display:flex; justify-content:space-between; margin-top:14px; }
+  .plan { display:grid; gap:6px; margin:6px 0 14px; font-size:13px; }
+  .floor { display:grid; grid-template-columns:110px repeat(4, 1fr) 70px 70px; gap:4px; align-items:stretch; }
+  .floor div { border:1px solid var(--wine); border-radius:6px; padding:6px 4px; text-align:center; background:#fff; }
+  .floor .lab { border:none; background:none; color:var(--wine); font-weight:bold; text-align:left; }
+  .floor .empty { border:none; background:none; }
+  table.sum { width:100%; border-collapse:collapse; margin-top:10px; }
+  table.sum td, table.sum th { border-bottom:1px solid var(--line); padding:8px; text-align:left; }
+  footer { text-align:center; color:var(--muted); font-size:12px; padding:18px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Time and Money · Practice</h1>
+  <p>Level 4 · Unit 3 — time and money, too / enough, prepositions, comparisons, apologies</p>
+</header>
+<main>
+  <div class="progress" id="progress"></div>
+  <div class="card" id="stage"></div>
+  <div class="nav">
+    <button class="ctl" id="back">← Back</button>
+    <button class="ctl primary" id="next">Next →</button>
+  </div>
+</main>
+<footer>Irvin Romo · English Teacher</footer>
+<script>
+const ACTIVITIES = [
+ {
+  "id": "L4U03-APP-A01",
+  "title": "Time and money words (1)",
+  "instr": "Read the meaning. Choose the word or phrase.",
+  "type": "mcq",
+  "items": [
+   [
+    "exchange one thing for another",
+    [
+     "trade",
+     "boost",
+     "balance"
+    ],
+    "trade",
+    "I traded my old job for a new lifestyle."
+   ],
+   [
+    "a good use of time",
+    [
+     "time well spent",
+     "quality of life",
+     "cost of living"
+    ],
+    "time well spent",
+    "Building circuits is time well spent."
+   ],
+   [
+    "general level of happiness",
+    [
+     "quality of life",
+     "standard of living",
+     "lifestyle"
+    ],
+    "quality of life",
+    "Free time improves it."
+   ],
+   [
+    "equal importance",
+    [
+     "balance",
+     "value",
+     "trade"
+    ],
+    "balance",
+    "Balance work and study."
+   ],
+   [
+    "how much we have to pay for basic needs",
+    [
+     "cost of living",
+     "salary cut",
+     "standard of living"
+    ],
+    "cost of living",
+    "It is going up in many cities."
+   ],
+   [
+    "make something bigger or better",
+    [
+     "boost",
+     "trade",
+     "value"
+    ],
+    "boost",
+    "Courses can boost your résumé."
+   ]
+  ]
+ },
+ {
+  "id": "L4U03-APP-A02",
+  "title": "Time and money words (2)",
+  "instr": "Read the meaning. Choose the word or phrase.",
+  "type": "mcq",
+  "items": [
+   [
+    "ability to meet basic needs",
+    [
+     "standard of living",
+     "quality of life",
+     "balance"
+    ],
+    "standard of living",
+    "Money and comfort."
+   ],
+   [
+    "not have enough money to do or buy something",
+    [
+     "can't afford",
+     "take a salary cut",
+     "be worth it"
+    ],
+    "can't afford",
+    "I can't afford a new laptop."
+   ],
+   [
+    "the way you live",
+    [
+     "lifestyle",
+     "value",
+     "boost"
+    ],
+    "lifestyle",
+    "A student lifestyle is busy."
+   ],
+   [
+    "get less money for your work",
+    [
+     "take a salary cut",
+     "can't afford",
+     "trade"
+    ],
+    "take a salary cut",
+    "She took a salary cut for a job near home."
+   ],
+   [
+    "have a positive result, even if it costs effort",
+    [
+     "be worth it",
+     "be worth of it",
+     "be worthy"
+    ],
+    "be worth it",
+    "It was hard, but it was worth it."
+   ],
+   [
+    "feel the importance of something",
+    [
+     "value",
+     "balance",
+     "boost"
+    ],
+    "value",
+    "I value my free time."
+   ]
+  ]
+ },
+ {
+  "id": "L4U03-APP-A03",
+  "title": "too or enough?",
+  "instr": "Choose the best word.",
+  "type": "mcq",
+  "items": [
+   [
+    "This circuit gets ___ hot to touch. We need a heat sink.",
+    [
+     "too",
+     "enough",
+     "too many"
+    ],
+    "too",
+    "too + adjective = more than OK."
+   ],
+   [
+    "The budget isn't big ___ for three competitions.",
+    [
+     "enough",
+     "too",
+     "too much"
+    ],
+    "enough",
+    "adjective + enough."
+   ],
+   [
+    "I have ___ projects this semester. I can't do another one.",
+    [
+     "too many",
+     "too much",
+     "enough"
+    ],
+    "too many",
+    "too many + countable noun."
+   ],
+   [
+    "Is the battery strong ___ to run the motors for an hour?",
+    [
+     "enough",
+     "too",
+     "too much"
+    ],
+    "enough",
+    "strong enough + to + verb."
+   ],
+   [
+    "There was ___ noise in the lab to concentrate.",
+    [
+     "too much",
+     "too many",
+     "enough"
+    ],
+    "too much",
+    "too much + uncountable noun."
+   ],
+   [
+    "The course is cheap ___ for most students.",
+    [
+     "enough",
+     "too",
+     "too many"
+    ],
+    "enough",
+    "OK / acceptable."
+   ],
+   [
+    "Too and not enough tell us that something is ___.",
+    [
+     "unacceptable",
+     "acceptable"
+    ],
+    "unacceptable",
+    "A problem."
+   ]
+  ]
+ },
+ {
+  "id": "L4U03-APP-A04",
+  "title": "Which preposition? (1)",
+  "instr": "Choose the preposition.",
+  "type": "mcq",
+  "items": [
+   [
+    "treat yourself ___ something nice",
+    [
+     "to",
+     "for",
+     "with"
+    ],
+    "to",
+    "treat yourself to …"
+   ],
+   [
+    "come up ___ a new idea",
+    [
+     "with",
+     "to",
+     "on"
+    ],
+    "with",
+    "come up with = think of."
+   ],
+   [
+    "They charge ___ delivery.",
+    [
+     "for",
+     "on",
+     "of"
+    ],
+    "for",
+    "charge for something."
+   ],
+   [
+    "It depends ___ the price.",
+    [
+     "on",
+     "of",
+     "in"
+    ],
+    "on",
+    "depend on."
+   ],
+   [
+    "make the most ___ your free time",
+    [
+     "of",
+     "on",
+     "for"
+    ],
+    "of",
+    "make the most of."
+   ],
+   [
+    "take advantage ___ a discount",
+    [
+     "of",
+     "on",
+     "to"
+    ],
+    "of",
+    "take advantage of."
+   ]
+  ]
+ },
+ {
+  "id": "L4U03-APP-A05",
+  "title": "Which preposition? (2)",
+  "instr": "Choose the preposition.",
+  "type": "mcq",
+  "items": [
+   [
+    "Price has an effect ___ how customers feel.",
+    [
+     "on",
+     "for",
+     "in"
+    ],
+    "on",
+    "have an effect on."
+   ],
+   [
+    "Customers suggest a price ___ their coffee.",
+    [
+     "for",
+     "on",
+     "in"
+    ],
+    "for",
+    "suggest a price for."
+   ],
+   [
+    "Small cafés rely ___ loyal customers.",
+    [
+     "on",
+     "for",
+     "in"
+    ],
+    "on",
+    "rely on."
+   ],
+   [
+    "I'm happy to pay a fair price ___ good coffee.",
+    [
+     "for",
+     "on",
+     "of"
+    ],
+    "for",
+    "pay for."
+   ],
+   [
+    "Customers play an important role ___ the business.",
+    [
+     "in",
+     "on",
+     "for"
+    ],
+    "in",
+    "play a role in."
+   ],
+   [
+    "I want to invest ___ better tools.",
+    [
+     "in",
+     "on",
+     "for"
+    ],
+    "in",
+    "invest in."
+   ]
+  ]
+ },
+ {
+  "id": "L4U03-APP-A06",
+  "title": "Big or small difference?",
+  "instr": "Choose the best word for the difference.",
+  "type": "mcq",
+  "items": [
+   [
+    "It's ___ busier than other places. (small difference)",
+    [
+     "a little",
+     "much",
+     "by far"
+    ],
+    "a little",
+    "a little / a bit + comparative."
+   ],
+   [
+    "It can be ___ cheaper than other places. (big difference)",
+    [
+     "much",
+     "a little",
+     "nearly"
+    ],
+    "much",
+    "much / a whole lot + comparative."
+   ],
+   [
+    "It's ___ as quiet as other places. (almost the same)",
+    [
+     "almost",
+     "nowhere near",
+     "by far"
+    ],
+    "almost",
+    "almost / nearly as … as."
+   ],
+   [
+    "The coffee was ___ as expensive as at my usual café. (very different)",
+    [
+     "nowhere near",
+     "almost",
+     "a bit"
+    ],
+    "nowhere near",
+    "nowhere near as … as."
+   ],
+   [
+    "It was ___ the best coffee I've ever had.",
+    [
+     "by far",
+     "much",
+     "a little"
+    ],
+    "by far",
+    "by far + superlative."
+   ]
+  ]
+ },
+ {
+  "id": "L4U03-APP-A07",
+  "title": "Apologizing and reassuring",
+  "instr": "Complete the expression.",
+  "type": "mcq",
+  "items": [
+   [
+    "I ___ how sorry I am.",
+    [
+     "can't tell you",
+     "can tell you",
+     "don't tell you"
+    ],
+    "can't tell you",
+    "A strong apology."
+   ],
+   [
+    "I just did the ___ thing.",
+    [
+     "dumbest",
+     "dumber",
+     "dumb"
+    ],
+    "dumbest",
+    "Explaining a silly mistake."
+   ],
+   [
+    "I can't ___ I didn't lock it.",
+    [
+     "believe",
+     "belief",
+     "believed"
+    ],
+    "believe",
+    "I can't believe + clause."
+   ],
+   [
+    "Don't ___ yourself up about it.",
+    [
+     "beat",
+     "hit",
+     "kick"
+    ],
+    "beat",
+    "Don't feel too bad."
+   ],
+   [
+    "It's not the end of the ___.",
+    [
+     "world",
+     "day",
+     "story"
+    ],
+    "world",
+    "It's not a big problem."
+   ]
+  ]
+ },
+ {
+  "id": "L4U03-APP-A08",
+  "title": "Build the sentence",
+  "instr": "Tap the parts in the right order. Tap a part again to remove it.",
+  "type": "order",
+  "items": [
+   [
+    [
+     "The coffee was",
+     "nowhere near",
+     "as expensive as",
+     "at my usual café"
+    ],
+    "The coffee was nowhere near as expensive as at my usual café",
+    "nowhere near as … as."
+   ],
+   [
+    [
+     "I can't tell you",
+     "how sorry",
+     "I am"
+    ],
+    "I can't tell you how sorry I am",
+    "A strong apology."
+   ],
+   [
+    [
+     "Is the battery",
+     "strong enough",
+     "to run",
+     "the motors?"
+    ],
+    "Is the battery strong enough to run the motors?",
+    "adjective + enough + to + verb."
+   ],
+   [
+    [
+     "It was",
+     "by far",
+     "the best coffee",
+     "I've ever had"
+    ],
+    "It was by far the best coffee I've ever had",
+    "by far + superlative."
+   ]
+  ]
+ },
+ {
+  "id": "L4U03-APP-A09",
+  "title": "Reviews and service",
+  "instr": "Choose the best word.",
+  "type": "mcq",
+  "items": [
+   [
+    "They're so comfortable to wear. I highly ___ them.",
+    [
+     "recommend",
+     "recommendation",
+     "commend"
+    ],
+    "recommend",
+    "Positive review."
+   ],
+   [
+    "It filled with water and ruined my phone. A complete ___ of money!",
+    [
+     "waste",
+     "loss",
+     "lack"
+    ],
+    "waste",
+    "a waste of money."
+   ],
+   [
+    "Great sound quality and great ___ for your money.",
+    [
+     "value",
+     "worth",
+     "price"
+    ],
+    "value",
+    "good value for money."
+   ],
+   [
+    "When a company makes a mistake, it should ___ fast.",
+    [
+     "apologize",
+     "apology",
+     "apologizing"
+    ],
+    "apologize",
+    "Verb after should."
+   ],
+   [
+    "Offer a fair solution: a refund, a replacement or a ___.",
+    [
+     "repair",
+     "receipt",
+     "review"
+    ],
+    "repair",
+    "Fix the product."
+   ],
+   [
+    "Good service recovery can make customers even more ___ than before.",
+    [
+     "loyal",
+     "angry",
+     "expensive"
+    ],
+    "loyal",
+    "They stay with the company."
+   ]
+  ]
+ }
+];
+
+// deterministic shuffle so the correct option is not always first
+function seeded(s){ let h=2166136261; for(const c of s){ h^=c.charCodeAt(0); h=Math.imul(h,16777619);} return ()=>{ h^=h<<13; h^=h>>>17; h^=h<<5; return ((h>>>0)%1000)/1000; }; }
+function shuffle(arr, key){ const r=seeded(key), a=arr.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(r()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+const state = ACTIVITIES.map(a => ({answers:a.items.map(()=>a.type==='order'?[]:null), checked:false, score:null, hints:false}));
+let current = 0, finished = false;
+const stage = document.getElementById('stage');
+
+function planHTML(){
+  const f=(label, rooms)=>`<div class="floor"><div class="lab">${label}</div>${rooms.map(r=>r?`<div>${r}</div>`:'<div class="empty"></div>').join('')}<div>stairs</div><div>elevator</div></div>`;
+  return `<div class="plan" aria-label="Restaurant floor plan">${f('Second floor',['office','staff room','',''])}${f('Ground floor',['entrance + lobby','kitchen','dining room','restroom'])}${f('Basement',['storage room','cold room','',''])}<div style="color:var(--muted)">On the ground floor, the hallway goes from the lobby to the stairs. The rooms are on your right.</div></div>`;
+}
+
+function render(){
+  renderProgress();
+  if(finished){ return renderSummary(); }
+  const a=ACTIVITIES[current], s=state[current];
+  let html=`<h2>${current+1}. ${a.title}</h2><p class="instr">${a.instr}</p>${a.plan?planHTML():''}<div class="items ${s.hints?'showhints':''}" data-activity="${a.id}" data-targets="${a.targets}">`;
+  a.items.forEach((it,i)=>{
+    if(a.type==='mcq'){
+      const opts=shuffle(it[1], a.id+i);
+      html+=`<div class="item" data-i="${i}"><div class="q">${i+1}. ${it[0]}</div><div class="opts">${opts.map(o=>`<button class="opt${s.answers[i]===o?' sel':''}" data-v="${encodeURIComponent(o)}">${o}</button>`).join('')}</div><div class="hint">Hint: ${it[3]}</div><div class="fb"></div></div>`;
+    } else {
+      const tiles=shuffle(it[0], a.id+i), used=s.answers[i];
+      html+=`<div class="item" data-i="${i}"><div class="q">${i+1}.</div><div class="tiles">${tiles.map((w,k)=>`<button class="tile${used.includes(k)?' used':''}" data-k="${k}">${w}</button>`).join('')}</div><div class="answerline">${used.map(k=>`<button class="tile placed" data-k="${k}">${tiles[k]}</button>`).join('')}</div><div class="hint">Hint: ${it[2]}</div><div class="fb"></div></div>`;
+    }
+  });
+  html+=`</div><div class="controls"><button class="ctl" id="hint">Hint</button><button class="ctl primary" id="check">Check</button><button class="ctl" id="show">Show answers</button><button class="ctl" id="retry">Try again</button></div><div class="score" id="score">${s.score!==null?scoreText(s.score,a.items.length):''}</div>`;
+  stage.innerHTML=html;
+  if(s.checked) paintCheck(false);
+  bind();
+  document.getElementById('back').disabled = current===0;
+  document.getElementById('next').textContent = current===ACTIVITIES.length-1 ? 'Finish ✓' : 'Next →';
+}
+
+function renderProgress(){
+  const p=document.getElementById('progress');
+  p.innerHTML=ACTIVITIES.map((a,i)=>`<button class="dot${i===current&&!finished?' active':''}${state[i].checked?' done':''}" data-go="${i}" title="${a.title}">${i+1}</button>`).join('');
+  p.querySelectorAll('.dot').forEach(d=>d.onclick=()=>{ finished=false; current=+d.dataset.go; render(); });
+}
+
+function tilesFor(i){ const a=ACTIVITIES[current]; return shuffle(a.items[i][0], a.id+i); }
+
+function bind(){
+  const a=ACTIVITIES[current], s=state[current];
+  stage.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{ const i=+b.closest('.item').dataset.i; s.answers[i]=decodeURIComponent(b.dataset.v); s.checked=false; s.score=null; render(); });
+  stage.querySelectorAll('.tiles .tile').forEach(b=>b.onclick=()=>{ const i=+b.closest('.item').dataset.i, k=+b.dataset.k; if(!s.answers[i].includes(k)) s.answers[i].push(k); s.checked=false; s.score=null; render(); });
+  stage.querySelectorAll('.answerline .tile').forEach(b=>b.onclick=()=>{ const i=+b.closest('.item').dataset.i, k=+b.dataset.k; s.answers[i]=s.answers[i].filter(x=>x!==k); s.checked=false; s.score=null; render(); });
+  document.getElementById('hint').onclick=()=>{ s.hints=!s.hints; render(); };
+  document.getElementById('check').onclick=()=>{ s.checked=true; s.score=countCorrect(); render(); };
+  document.getElementById('show').onclick=()=>{ showAnswers(); s.checked=true; s.score=countCorrect(); s.revealed=true; render(); };
+  document.getElementById('retry').onclick=()=>{ state[current]={answers:a.items.map(()=>a.type==='order'?[]:null), checked:false, score:null, hints:false}; render(); };
+}
+
+function isCorrect(i){
+  const a=ACTIVITIES[current], s=state[current], it=a.items[i];
+  if(a.type==='mcq') return s.answers[i]===it[2];
+  const tiles=tilesFor(i); return s.answers[i].map(k=>tiles[k]).join(' ')===it[1];
+}
+function countCorrect(){ return ACTIVITIES[current].items.reduce((n,_,i)=>n+(isCorrect(i)?1:0),0); }
+function scoreText(n,t){ return `Score: ${n} / ${t}` + (n===t?' — excellent!':''); }
+
+function paintCheck(){
+  const a=ACTIVITIES[current], s=state[current];
+  stage.querySelectorAll('.item').forEach(el=>{
+    const i=+el.dataset.i, ok=isCorrect(i), empty=a.type==='mcq'?s.answers[i]===null:s.answers[i].length===0;
+    el.classList.add(ok?'correct':'wrong');
+    const right=a.type==='mcq'?a.items[i][2]:a.items[i][1].replace(' ?','?');
+    el.querySelector('.fb').textContent = ok ? 'Correct!' : (empty ? 'Choose an answer. ' : 'Not yet. ') + (s.revealed ? 'Answer: '+right : 'Try the hint.');
+  });
+}
+
+function showAnswers(){
+  const a=ACTIVITIES[current], s=state[current];
+  a.items.forEach((it,i)=>{
+    if(a.type==='mcq') s.answers[i]=it[2];
+    else { s.answers[i]=tileOrder(tilesFor(i), it[1]); }
+  });
+}
+
+// Tile indexes that spell the answer; tiles can hold more than one word ("my motorcycle").
+function tileOrder(tiles, answer){
+  const taken=[]; let rest=answer;
+  while(rest.length){
+    const k=tiles.map((t,idx)=>idx).filter(idx=>!taken.includes(idx)&&(rest===tiles[idx]||rest.startsWith(tiles[idx]+' ')))
+                 .sort((x,y)=>tiles[y].length-tiles[x].length)[0];
+    if(k===undefined) break;
+    taken.push(k); rest=rest.slice(tiles[k].length).trimStart();
+  }
+  return taken;
+}
+
+function renderSummary(){
+  const total=ACTIVITIES.reduce((n,a)=>n+a.items.length,0);
+  const got=state.reduce((n,s)=>n+(s.score||0),0);
+  stage.innerHTML=`<h2>Well done!</h2><p class="instr">Here is your score for each activity. Choose an activity to practice again.</p>
+   <table class="sum"><tr><th>Activity</th><th>Score</th></tr>${ACTIVITIES.map((a,i)=>`<tr><td>${i+1}. ${a.title}</td><td>${state[i].score===null?'not checked':state[i].score+' / '+a.items.length}</td></tr>`).join('')}
+   <tr><th>Total</th><th id="total">${got} / ${total}</th></tr></table>
+   <div class="controls"><button class="ctl primary" id="restart">Start again</button></div>`;
+  document.getElementById('restart').onclick=()=>{ ACTIVITIES.forEach((a,i)=>state[i]={answers:a.items.map(()=>a.type==='order'?[]:null), checked:false, score:null, hints:false}); finished=false; current=0; render(); };
+  document.getElementById('back').disabled=false;
+  document.getElementById('next').textContent='Finish ✓';
+}
+
+document.getElementById('back').onclick=()=>{ if(finished){ finished=false; } else if(current>0){ current--; } render(); };
+document.getElementById('next').onclick=()=>{ if(current<ACTIVITIES.length-1 && !finished){ current++; } else { finished=true; } render(); };
+render();
+</script>
+</body>
+</html>
