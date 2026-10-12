@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Decisions · Practice</title>
+<style>
+  :root { --wine:#722F37; --gold:#C5A059; --bg:#FFFAF0; --card:#FFFFFF; --soft:#F6ECE4; --text:#1A1A1A; --muted:#555555;
+          --ok:#2D7A4A; --okbg:#E3F1E8; --bad:#B04545; --badbg:#F8E5E5; --line:#EADFC8; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:Arial, Helvetica, sans-serif; background:var(--bg); color:var(--text); }
+  header { background:var(--wine); color:#fff; padding:14px 18px; }
+  header h1 { margin:0; font-size:22px; }
+  header p { margin:4px 0 0; font-size:14px; opacity:.9; }
+  main { max-width:860px; margin:0 auto; padding:16px; }
+  .progress { display:flex; flex-wrap:wrap; gap:6px; margin:4px 0 14px; }
+  .dot { width:34px; height:34px; border-radius:50%; border:2px solid var(--gold); background:#fff; color:var(--wine);
+         font-weight:bold; cursor:pointer; }
+  .dot.active { background:var(--wine); color:#fff; border-color:var(--wine); }
+  .dot.done { background:var(--okbg); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px; }
+  .card h2 { margin:0 0 4px; color:var(--wine); font-size:20px; }
+  .instr { margin:0 0 14px; color:var(--muted); }
+  .item { border-top:1px solid var(--line); padding:12px 0; }
+  .item:first-of-type { border-top:none; }
+  .q { font-weight:bold; margin-bottom:8px; }
+  .opts { display:flex; flex-wrap:wrap; gap:8px; }
+  .opt { border:2px solid var(--line); background:#fff; border-radius:20px; padding:7px 14px; cursor:pointer; font-size:15px; }
+  .opt.sel { border-color:var(--wine); background:var(--soft); }
+  .item.correct .opt.sel, .item.correct .answerline { border-color:var(--ok); background:var(--okbg); }
+  .item.wrong .opt.sel, .item.wrong .answerline { border-color:var(--bad); background:var(--badbg); }
+  .fb { margin-top:6px; font-size:14px; min-height:18px; }
+  .item.correct .fb { color:var(--ok); } .item.wrong .fb { color:var(--bad); }
+  .hint { display:none; margin-top:6px; font-size:14px; color:var(--wine); background:var(--soft); padding:6px 10px; border-radius:8px; }
+  .showhints .hint { display:block; }
+  .tiles { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+  .tile { border:1px solid var(--gold); background:#FBF3E4; border-radius:6px; padding:6px 10px; cursor:pointer; font-size:15px; }
+  .tile.used { visibility:hidden; }
+  .answerline { min-height:40px; border:2px dashed var(--line); border-radius:8px; padding:6px; display:flex; flex-wrap:wrap; gap:6px; }
+  .answerline .tile { background:#fff; }
+  .controls { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+  button.ctl { font-family:inherit; font-size:15px; border-radius:8px; padding:9px 14px; cursor:pointer; border:2px solid var(--wine); background:#fff; color:var(--wine); }
+  button.ctl.primary { background:var(--wine); color:#fff; }
+  .score { margin-top:10px; font-weight:bold; color:var(--wine); min-height:20px; }
+  .nav { display:flex; justify-content:space-between; margin-top:14px; }
+  .plan { display:grid; gap:6px; margin:6px 0 14px; font-size:13px; }
+  .floor { display:grid; grid-template-columns:110px repeat(4, 1fr) 70px 70px; gap:4px; align-items:stretch; }
+  .floor div { border:1px solid var(--wine); border-radius:6px; padding:6px 4px; text-align:center; background:#fff; }
+  .floor .lab { border:none; background:none; color:var(--wine); font-weight:bold; text-align:left; }
+  .floor .empty { border:none; background:none; }
+  table.sum { width:100%; border-collapse:collapse; margin-top:10px; }
+  table.sum td, table.sum th { border-bottom:1px solid var(--line); padding:8px; text-align:left; }
+  footer { text-align:center; color:var(--muted); font-size:12px; padding:18px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Decisions · Practice</h1>
+  <p>Business Partner B2+ · Unit 8 — decision steps, verb patterns, facts and feelings, formal letters</p>
+</header>
+<main>
+  <div class="progress" id="progress"></div>
+  <div class="card" id="stage"></div>
+  <div class="nav">
+    <button class="ctl" id="back">← Back</button>
+    <button class="ctl primary" id="next">Next →</button>
+  </div>
+</main>
+<footer>Irvin Romo · English Teacher</footer>
+<script>
+const ACTIVITIES = [
+ {
+  "id": "BP8-APP-A01",
+  "title": "The DECIDE model",
+  "instr": "Choose the stage for each letter of DECIDE.",
+  "type": "mcq",
+  "items": [
+   [
+    "D — the first stage",
+    [
+     "Define the problem",
+     "Develop an action plan",
+     "Delay the decision"
+    ],
+    "Define the problem",
+    "First, say exactly what the problem is."
+   ],
+   [
+    "E — the second stage",
+    [
+     "Establish criteria or constraints",
+     "Evaluate and monitor",
+     "Examine feedback"
+    ],
+    "Establish criteria or constraints",
+    "Decide what a good solution must meet."
+   ],
+   [
+    "C — the third stage",
+    [
+     "Consider alternatives",
+     "Cancel the plan",
+     "Check the budget only"
+    ],
+    "Consider alternatives",
+    "Look at more than one option."
+   ],
+   [
+    "I — the fourth stage",
+    [
+     "Identify the best alternative",
+     "Ignore your feelings",
+     "Implement at once"
+    ],
+    "Identify the best alternative",
+    "Choose the strongest option."
+   ],
+   [
+    "D — the fifth stage",
+    [
+     "Develop and implement an action plan",
+     "Define the problem",
+     "Discuss it later"
+    ],
+    "Develop and implement an action plan",
+    "Plan it and put it into action."
+   ],
+   [
+    "E — the last stage",
+    [
+     "Evaluate and monitor",
+     "Establish criteria",
+     "Estimate the cost"
+    ],
+    "Evaluate and monitor",
+    "Check the results and reconsider if needed."
+   ]
+  ]
+ },
+ {
+  "id": "BP8-APP-A02",
+  "title": "Decision vocabulary",
+  "instr": "Complete the decision steps. Choose the word.",
+  "type": "mcq",
+  "items": [
+   [
+    "Recognise and ___ a problem.",
+    [
+     "define",
+     "reconsider",
+     "monitor"
+    ],
+    "define",
+    "Say exactly what it is."
+   ],
+   [
+    "Pull ___ the data.",
+    [
+     "together",
+     "apart",
+     "off"
+    ],
+    "together",
+    "Collect all the information in one place."
+   ],
+   [
+    "Trust a ___.",
+    [
+     "gut-feeling",
+     "constraint",
+     "criterion"
+    ],
+    "gut-feeling",
+    "Your instinct."
+   ],
+   [
+    "___ the best alternative.",
+    [
+     "Identify",
+     "Examine",
+     "Define"
+    ],
+    "Identify",
+    "Find and choose."
+   ],
+   [
+    "___ and monitor the solution.",
+    [
+     "Evaluate",
+     "Pull",
+     "Trust"
+    ],
+    "Evaluate",
+    "Judge how well it works."
+   ],
+   [
+    "___ feedback.",
+    [
+     "Examine",
+     "Identify",
+     "Define"
+    ],
+    "Examine",
+    "Look at it carefully."
+   ],
+   [
+    "___ the decision when needed.",
+    [
+     "Reconsider",
+     "Define",
+     "Pull"
+    ],
+    "Reconsider",
+    "Think about it again."
+   ]
+  ]
+ },
+ {
+  "id": "BP8-APP-A03",
+  "title": "to-infinitive or -ing?",
+  "instr": "Choose the correct form after each verb or expression.",
+  "type": "mcq",
+  "items": [
+   [
+    "Have you ever decided ___ something new?",
+    [
+     "to do",
+     "doing"
+    ],
+    "to do",
+    "decide + to-infinitive."
+   ],
+   [
+    "Don't put off ___ the report.",
+    [
+     "finishing",
+     "to finish"
+    ],
+    "finishing",
+    "put off + -ing."
+   ],
+   [
+    "Try to avoid ___ decisions when you are tired.",
+    [
+     "making",
+     "to make"
+    ],
+    "making",
+    "avoid + -ing."
+   ],
+   [
+    "There's no point in ___ about it now.",
+    [
+     "worrying",
+     "to worry"
+    ],
+    "worrying",
+    "be no point in + -ing."
+   ],
+   [
+    "It's worth ___ the pros and cons.",
+    [
+     "weighing",
+     "to weigh"
+    ],
+    "weighing",
+    "be worth + -ing."
+   ],
+   [
+    "I'm getting better at ___ quick decisions.",
+    [
+     "making",
+     "to make"
+    ],
+    "making",
+    "get better at + -ing."
+   ],
+   [
+    "Are you afraid of ___ the wrong choice?",
+    [
+     "making",
+     "to make"
+    ],
+    "making",
+    "be afraid of + -ing."
+   ]
+  ]
+ },
+ {
+  "id": "BP8-APP-A04",
+  "title": "Critical-thinking blog",
+  "instr": "Choose the correct verb form from the blog.",
+  "type": "mcq",
+  "items": [
+   [
+    "Thinking critically is useful when deciding ___ something.",
+    [
+     "to do",
+     "doing"
+    ],
+    "to do",
+    "decide + to-infinitive."
+   ],
+   [
+    "I try ___ my critical thinking for things that matter.",
+    [
+     "to save",
+     "saving"
+    ],
+    "to save",
+    "try + to-infinitive = make an effort."
+   ],
+   [
+    "After three months, you probably got better at ___ those decisions.",
+    [
+     "making",
+     "to make"
+    ],
+    "making",
+    "get better at + -ing."
+   ],
+   [
+    "We mostly choose ___ things based on habit.",
+    [
+     "to do",
+     "doing"
+    ],
+    "to do",
+    "choose + to-infinitive."
+   ],
+   [
+    "We want ___ getting decision fatigue.",
+    [
+     "to avoid",
+     "avoiding"
+    ],
+    "to avoid",
+    "want + to-infinitive."
+   ],
+   [
+    "There's no point in ___ about which coffee to get.",
+    [
+     "thinking",
+     "to think"
+    ],
+    "thinking",
+    "no point in + -ing."
+   ],
+   [
+    "You would end up ___ a bad decision much more.",
+    [
+     "regretting",
+     "to regret"
+    ],
+    "regretting",
+    "end up + -ing."
+   ]
+  ]
+ },
+ {
+  "id": "BP8-APP-A05",
+  "title": "The pattern changes the meaning",
+  "instr": "Read the meaning in brackets. Choose the form.",
+  "type": "mcq",
+  "items": [
+   [
+    "I regret ___ the job. (I am sorry I didn't take it.)",
+    [
+     "not taking",
+     "not to take"
+    ],
+    "not taking",
+    "regret + -ing = sorry about the past."
+   ],
+   [
+    "We regret ___ you that the event is cancelled. (formal notice)",
+    [
+     "to inform",
+     "informing"
+    ],
+    "to inform",
+    "regret + to-infinitive = formal bad news."
+   ],
+   [
+    "Weighing the pros and cons means ___ better decisions. (results in)",
+    [
+     "making",
+     "to make"
+    ],
+    "making",
+    "mean + -ing = involve / result in."
+   ],
+   [
+    "Do you mean ___ late tonight? (intend)",
+    [
+     "to stay",
+     "staying"
+    ],
+    "to stay",
+    "mean + to-infinitive = intend."
+   ],
+   [
+    "The report needs ___. (It should be done.)",
+    [
+     "finishing",
+     "to finish"
+    ],
+    "finishing",
+    "need + -ing = passive meaning."
+   ],
+   [
+    "I need ___ the client today. (I should do it.)",
+    [
+     "to call",
+     "calling"
+    ],
+    "to call",
+    "need + to-infinitive = someone should do it."
+   ]
+  ]
+ },
+ {
+  "id": "BP8-APP-A06",
+  "title": "Build the sentence",
+  "instr": "Tap the parts in the right order. Tap a part again to remove it.",
+  "type": "order",
+  "items": [
+   [
+    [
+     "He regrets",
+     "not finishing",
+     "his course"
+    ],
+    "He regrets not finishing his course",
+    "regret + not + -ing."
+   ],
+   [
+    [
+     "I suggest",
+     "talking to",
+     "your line manager"
+    ],
+    "I suggest talking to your line manager",
+    "suggest + -ing."
+   ],
+   [
+    [
+     "The situation",
+     "needs",
+     "to be discussed"
+    ],
+    "The situation needs to be discussed",
+    "need + to be + past participle."
+   ],
+   [
+    [
+     "I clearly remember",
+     "telling my manager",
+     "about the problem"
+    ],
+    "I clearly remember telling my manager about the problem",
+    "remember + -ing = a memory."
+   ],
+   [
+    [
+     "Is it worth",
+     "asking Olga",
+     "to help?"
+    ],
+    "Is it worth asking Olga to help?",
+    "be worth + -ing."
+   ]
+  ]
+ },
+ {
+  "id": "BP8-APP-A07",
+  "title": "Facts and feelings",
+  "instr": "Complete the meeting dialogue. Choose the word.",
+  "type": "mcq",
+  "items": [
+   [
+    "Now, even ___ we had some problems, the event was amazing.",
+    [
+     "though",
+     "if",
+     "so"
+    ],
+    "though",
+    "even though = despite the fact that."
+   ],
+   [
+    "I ___ felt the event was amazing.",
+    [
+     "personally",
+     "personal",
+     "person"
+    ],
+    "personally",
+    "An adverb before the verb."
+   ],
+   [
+    "We can't let feelings about money ___ our judgement.",
+    [
+     "cloud",
+     "clear",
+     "close"
+    ],
+    "cloud",
+    "Feelings can cloud judgement."
+   ],
+   [
+    "The fact of the ___ is we were 40 percent over budget.",
+    [
+     "matter",
+     "thing",
+     "case"
+    ],
+    "matter",
+    "The fact of the matter is …"
+   ],
+   [
+    "It's ___ that we spent much more than planned.",
+    [
+     "true",
+     "truth",
+     "truly"
+    ],
+    "true",
+    "It's true that …"
+   ],
+   [
+    "I see your point, but you're being too ___.",
+    [
+     "harsh",
+     "hard",
+     "heavy"
+    ],
+    "harsh",
+    "Too critical or unkind."
+   ]
+  ]
+ },
+ {
+  "id": "BP8-APP-A08",
+  "title": "Protecting the relationship",
+  "instr": "Choose the phrase that keeps the conversation polite and clear.",
+  "type": "mcq",
+  "items": [
+   [
+    "There's ___ to say this, so I'll be direct.",
+    [
+     "no easy way",
+     "not easy way",
+     "no way easy"
+    ],
+    "no easy way",
+    "There's no easy way to say this …"
+   ],
+   [
+    "Let's put the project ___ for a few weeks.",
+    [
+     "on hold",
+     "in hold",
+     "at hold"
+    ],
+    "on hold",
+    "Pause it for now."
+   ],
+   [
+    "It's ___ for both of us.",
+    [
+     "a tricky situation",
+     "a tricky situate",
+     "tricky a situation"
+    ],
+    "a tricky situation",
+    "A difficult situation."
+   ],
+   [
+    "I know you had ___ when you started it.",
+    [
+     "good intentions",
+     "good intends",
+     "well intentions"
+    ],
+    "good intentions",
+    "You wanted to do something good."
+   ],
+   [
+    "My workload has been ___ by the new client.",
+    [
+     "negatively affected",
+     "negative affected",
+     "negatively affect"
+    ],
+    "negatively affected",
+    "Adverb + past participle."
+   ],
+   [
+    "A: I don't want to cause any problems. B: ___",
+    [
+     "Neither do I.",
+     "So do I.",
+     "Neither I do."
+    ],
+    "Neither do I.",
+    "Agree with a negative sentence."
+   ]
+  ]
+ },
+ {
+  "id": "BP8-APP-A09",
+  "title": "Formal letter language",
+  "instr": "Choose the best word for a formal letter about a decision.",
+  "type": "mcq",
+  "items": [
+   [
+    "___ to our meeting last week, the board has made a decision.",
+    [
+     "Further",
+     "Farther",
+     "Furthermore"
+    ],
+    "Further",
+    "Further to = following."
+   ],
+   [
+    "This change ___ us to reduce our costs.",
+    [
+     "will enable",
+     "will able",
+     "enables to"
+    ],
+    "will enable",
+    "enable someone to do something."
+   ],
+   [
+    "I can ___ you that no jobs will be lost.",
+    [
+     "assure",
+     "ensure",
+     "insure"
+    ],
+    "assure",
+    "assure a person = tell them confidently."
+   ],
+   [
+    "In ___ of these results, we will open one new location.",
+    [
+     "view",
+     "sight",
+     "look"
+    ],
+    "view",
+    "In view of = because of."
+   ],
+   [
+    "Dear Ms Novak, … Yours ___,",
+    [
+     "sincerely",
+     "faithfully",
+     "sincere"
+    ],
+    "sincerely",
+    "You know the name → Yours sincerely."
+   ]
+  ]
+ },
+ {
+  "id": "BP8-APP-A10",
+  "title": "Unit review",
+  "instr": "Mixed questions from the whole unit.",
+  "type": "mcq",
+  "items": [
+   [
+    "The ___ view compares similar past cases before looking at this one.",
+    [
+     "outside",
+     "inside",
+     "upside"
+    ],
+    "outside",
+    "Start from similar cases."
+   ],
+   [
+    "Good decisions use probability and ___.",
+    [
+     "forecasting",
+     "fortune",
+     "forgetting"
+    ],
+    "forecasting",
+    "Predicting what will happen."
+   ],
+   [
+    "Different choices can lead to different ___.",
+    [
+     "outcomes",
+     "incomes",
+     "outputs"
+    ],
+    "outcomes",
+    "Results."
+   ],
+   [
+    "A fact-based decision looks first at the ___.",
+    [
+     "evidence",
+     "emotions",
+     "relationship"
+    ],
+    "evidence",
+    "Data, numbers, what happened."
+   ],
+   [
+    "Most decisions should consider both facts and ___.",
+    [
+     "feelings",
+     "fees",
+     "failures"
+    ],
+    "feelings",
+    "The source advises using both."
+   ]
+  ]
+ }
+];
+
+// deterministic shuffle so the correct option is not always first
+function seeded(s){ let h=2166136261; for(const c of s){ h^=c.charCodeAt(0); h=Math.imul(h,16777619);} return ()=>{ h^=h<<13; h^=h>>>17; h^=h<<5; return ((h>>>0)%1000)/1000; }; }
+function shuffle(arr, key){ const r=seeded(key), a=arr.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(r()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+const state = ACTIVITIES.map(a => ({answers:a.items.map(()=>a.type==='order'?[]:null), checked:false, score:null, hints:false}));
+let current = 0, finished = false;
+const stage = document.getElementById('stage');
+
+function planHTML(){
+  const f=(label, rooms)=>`<div class="floor"><div class="lab">${label}</div>${rooms.map(r=>r?`<div>${r}</div>`:'<div class="empty"></div>').join('')}<div>stairs</div><div>elevator</div></div>`;
+  return `<div class="plan" aria-label="Restaurant floor plan">${f('Second floor',['office','staff room','',''])}${f('Ground floor',['entrance + lobby','kitchen','dining room','restroom'])}${f('Basement',['storage room','cold room','',''])}<div style="color:var(--muted)">On the ground floor, the hallway goes from the lobby to the stairs. The rooms are on your right.</div></div>`;
+}
+
+function render(){
+  renderProgress();
+  if(finished){ return renderSummary(); }
+  const a=ACTIVITIES[current], s=state[current];
+  let html=`<h2>${current+1}. ${a.title}</h2><p class="instr">${a.instr}</p>${a.plan?planHTML():''}<div class="items ${s.hints?'showhints':''}" data-activity="${a.id}" data-targets="${a.targets}">`;
+  a.items.forEach((it,i)=>{
+    if(a.type==='mcq'){
+      const opts=shuffle(it[1], a.id+i);
+      html+=`<div class="item" data-i="${i}"><div class="q">${i+1}. ${it[0]}</div><div class="opts">${opts.map(o=>`<button class="opt${s.answers[i]===o?' sel':''}" data-v="${encodeURIComponent(o)}">${o}</button>`).join('')}</div><div class="hint">Hint: ${it[3]}</div><div class="fb"></div></div>`;
+    } else {
+      const tiles=shuffle(it[0], a.id+i), used=s.answers[i];
+      html+=`<div class="item" data-i="${i}"><div class="q">${i+1}.</div><div class="tiles">${tiles.map((w,k)=>`<button class="tile${used.includes(k)?' used':''}" data-k="${k}">${w}</button>`).join('')}</div><div class="answerline">${used.map(k=>`<button class="tile placed" data-k="${k}">${tiles[k]}</button>`).join('')}</div><div class="hint">Hint: ${it[2]}</div><div class="fb"></div></div>`;
+    }
+  });
+  html+=`</div><div class="controls"><button class="ctl" id="hint">Hint</button><button class="ctl primary" id="check">Check</button><button class="ctl" id="show">Show answers</button><button class="ctl" id="retry">Try again</button></div><div class="score" id="score">${s.score!==null?scoreText(s.score,a.items.length):''}</div>`;
+  stage.innerHTML=html;
+  if(s.checked) paintCheck(false);
+  bind();
+  document.getElementById('back').disabled = current===0;
+  document.getElementById('next').textContent = current===ACTIVITIES.length-1 ? 'Finish ✓' : 'Next →';
+}
+
+function renderProgress(){
+  const p=document.getElementById('progress');
+  p.innerHTML=ACTIVITIES.map((a,i)=>`<button class="dot${i===current&&!finished?' active':''}${state[i].checked?' done':''}" data-go="${i}" title="${a.title}">${i+1}</button>`).join('');
+  p.querySelectorAll('.dot').forEach(d=>d.onclick=()=>{ finished=false; current=+d.dataset.go; render(); });
+}
+
+function tilesFor(i){ const a=ACTIVITIES[current]; return shuffle(a.items[i][0], a.id+i); }
+
+function bind(){
+  const a=ACTIVITIES[current], s=state[current];
+  stage.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{ const i=+b.closest('.item').dataset.i; s.answers[i]=decodeURIComponent(b.dataset.v); s.checked=false; s.score=null; render(); });
+  stage.querySelectorAll('.tiles .tile').forEach(b=>b.onclick=()=>{ const i=+b.closest('.item').dataset.i, k=+b.dataset.k; if(!s.answers[i].includes(k)) s.answers[i].push(k); s.checked=false; s.score=null; render(); });
+  stage.querySelectorAll('.answerline .tile').forEach(b=>b.onclick=()=>{ const i=+b.closest('.item').dataset.i, k=+b.dataset.k; s.answers[i]=s.answers[i].filter(x=>x!==k); s.checked=false; s.score=null; render(); });
+  document.getElementById('hint').onclick=()=>{ s.hints=!s.hints; render(); };
+  document.getElementById('check').onclick=()=>{ s.checked=true; s.score=countCorrect(); render(); };
+  document.getElementById('show').onclick=()=>{ showAnswers(); s.checked=true; s.score=countCorrect(); s.revealed=true; render(); };
+  document.getElementById('retry').onclick=()=>{ state[current]={answers:a.items.map(()=>a.type==='order'?[]:null), checked:false, score:null, hints:false}; render(); };
+}
+
+function isCorrect(i){
+  const a=ACTIVITIES[current], s=state[current], it=a.items[i];
+  if(a.type==='mcq') return s.answers[i]===it[2];
+  const tiles=tilesFor(i); return s.answers[i].map(k=>tiles[k]).join(' ')===it[1];
+}
+function countCorrect(){ return ACTIVITIES[current].items.reduce((n,_,i)=>n+(isCorrect(i)?1:0),0); }
+function scoreText(n,t){ return `Score: ${n} / ${t}` + (n===t?' — excellent!':''); }
+
+function paintCheck(){
+  const a=ACTIVITIES[current], s=state[current];
+  stage.querySelectorAll('.item').forEach(el=>{
+    const i=+el.dataset.i, ok=isCorrect(i), empty=a.type==='mcq'?s.answers[i]===null:s.answers[i].length===0;
+    el.classList.add(ok?'correct':'wrong');
+    const right=a.type==='mcq'?a.items[i][2]:a.items[i][1].replace(' ?','?');
+    el.querySelector('.fb').textContent = ok ? 'Correct!' : (empty ? 'Choose an answer. ' : 'Not yet. ') + (s.revealed ? 'Answer: '+right : 'Try the hint.');
+  });
+}
+
+function showAnswers(){
+  const a=ACTIVITIES[current], s=state[current];
+  a.items.forEach((it,i)=>{
+    if(a.type==='mcq') s.answers[i]=it[2];
+    else { s.answers[i]=tileOrder(tilesFor(i), it[1]); }
+  });
+}
+
+// Tile indexes that spell the answer; tiles can hold more than one word ("my motorcycle").
+function tileOrder(tiles, answer){
+  const taken=[]; let rest=answer;
+  while(rest.length){
+    const k=tiles.map((t,idx)=>idx).filter(idx=>!taken.includes(idx)&&(rest===tiles[idx]||rest.startsWith(tiles[idx]+' ')))
+                 .sort((x,y)=>tiles[y].length-tiles[x].length)[0];
+    if(k===undefined) break;
+    taken.push(k); rest=rest.slice(tiles[k].length).trimStart();
+  }
+  return taken;
+}
+
+function renderSummary(){
+  const total=ACTIVITIES.reduce((n,a)=>n+a.items.length,0);
+  const got=state.reduce((n,s)=>n+(s.score||0),0);
+  stage.innerHTML=`<h2>Well done!</h2><p class="instr">Here is your score for each activity. Choose an activity to practice again.</p>
+   <table class="sum"><tr><th>Activity</th><th>Score</th></tr>${ACTIVITIES.map((a,i)=>`<tr><td>${i+1}. ${a.title}</td><td>${state[i].score===null?'not checked':state[i].score+' / '+a.items.length}</td></tr>`).join('')}
+   <tr><th>Total</th><th id="total">${got} / ${total}</th></tr></table>
+   <div class="controls"><button class="ctl primary" id="restart">Start again</button></div>`;
+  document.getElementById('restart').onclick=()=>{ ACTIVITIES.forEach((a,i)=>state[i]={answers:a.items.map(()=>a.type==='order'?[]:null), checked:false, score:null, hints:false}); finished=false; current=0; render(); };
+  document.getElementById('back').disabled=false;
+  document.getElementById('next').textContent='Finish ✓';
+}
+
+document.getElementById('back').onclick=()=>{ if(finished){ finished=false; } else if(current>0){ current--; } render(); };
+document.getElementById('next').onclick=()=>{ if(current<ACTIVITIES.length-1 && !finished){ current++; } else { finished=true; } render(); };
+render();
+</script>
+</body>
+</html>
