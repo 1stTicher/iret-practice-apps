@@ -578,7 +578,7 @@ function render(){
       html+=`<div class="item" data-i="${i}"><div class="q">${i+1}.</div><div class="tiles">${tiles.map((w,k)=>`<button class="tile${used.includes(k)?' used':''}" data-k="${k}">${w}</button>`).join('')}</div><div class="answerline">${used.map(k=>`<button class="tile placed" data-k="${k}">${tiles[k]}</button>`).join('')}</div><div class="hint">Hint: ${it[2]}</div><div class="fb"></div></div>`;
     }
   });
-  html+=`</div><div class="controls"><button class="ctl" id="hint">Hint</button><button class="ctl primary" id="check">Check</button><button class="ctl" id="show">Show answers</button><button class="ctl" id="retry">Try again</button></div><div class="score" id="score">${s.score!==null?scoreText(s.score,a.items.length):''}</div>`;
+  html+=`</div><div class="controls"><button class="ctl" id="hint">Hint</button><button class="ctl primary" id="check">Check</button><button class="ctl" id="show">Show answers</button><button class="ctl" id="retry">Try again</button></div><div class="score" id="score">${s.revealed?'Review mode — answers shown; no independent score.':s.score!==null?scoreText(s.score,a.items.length):''}</div>`;
   stage.innerHTML=html;
   if(s.checked) paintCheck(false);
   bind();
@@ -600,8 +600,8 @@ function bind(){
   stage.querySelectorAll('.tiles .tile').forEach(b=>b.onclick=()=>{ const i=+b.closest('.item').dataset.i, k=+b.dataset.k; if(!s.answers[i].includes(k)) s.answers[i].push(k); s.checked=false; s.score=null; render(); });
   stage.querySelectorAll('.answerline .tile').forEach(b=>b.onclick=()=>{ const i=+b.closest('.item').dataset.i, k=+b.dataset.k; s.answers[i]=s.answers[i].filter(x=>x!==k); s.checked=false; s.score=null; render(); });
   document.getElementById('hint').onclick=()=>{ s.hints=!s.hints; render(); };
-  document.getElementById('check').onclick=()=>{ s.checked=true; s.score=countCorrect(); render(); };
-  document.getElementById('show').onclick=()=>{ showAnswers(); s.checked=true; s.score=countCorrect(); s.revealed=true; render(); };
+  document.getElementById('check').onclick=()=>{ s.checked=true; s.score=s.revealed?null:countCorrect(); render(); };
+  document.getElementById('show').onclick=()=>{ showAnswers(); s.checked=true; s.score=null; s.revealed=true; render(); };
   document.getElementById('retry').onclick=()=>{ state[current]={answers:a.items.map(()=>a.type==='order'?[]:null), checked:false, score:null, hints:false}; render(); };
 }
 
@@ -619,7 +619,7 @@ function paintCheck(){
     const i=+el.dataset.i, ok=isCorrect(i), empty=a.type==='mcq'?s.answers[i]===null:s.answers[i].length===0;
     el.classList.add(ok?'correct':'wrong');
     const right=a.type==='mcq'?a.items[i][2]:a.items[i][1].replace(' ?','?');
-    el.querySelector('.fb').textContent = ok ? 'Correct!' : (empty ? 'Choose an answer. ' : 'Not yet. ') + (s.revealed ? 'Answer: '+right : 'Try the hint.');
+    el.querySelector('.fb').textContent = s.revealed ? 'Review answer: '+right : ok ? 'Correct!' : (empty ? 'Choose an answer. ' : 'Not yet. ') + (s.revealed ? 'Answer: '+right : 'Try the hint.');
   });
 }
 
@@ -645,9 +645,9 @@ function tileOrder(tiles, answer){
 
 function renderSummary(){
   const total=ACTIVITIES.reduce((n,a)=>n+a.items.length,0);
-  const got=state.reduce((n,s)=>n+(s.score||0),0);
+  const got=state.reduce((n,s)=>n+(s.revealed?0:(s.score||0)),0);
   stage.innerHTML=`<h2>Well done!</h2><p class="instr">Here is your score for each activity. Choose an activity to practice again.</p>
-   <table class="sum"><tr><th>Activity</th><th>Score</th></tr>${ACTIVITIES.map((a,i)=>`<tr><td>${i+1}. ${a.title}</td><td>${state[i].score===null?'not checked':state[i].score+' / '+a.items.length}</td></tr>`).join('')}
+   <table class="sum"><tr><th>Activity</th><th>Score</th></tr>${ACTIVITIES.map((a,i)=>`<tr><td>${i+1}. ${a.title}</td><td>${state[i].revealed?'reviewed — no score':state[i].score===null?'not checked':state[i].score+' / '+a.items.length}</td></tr>`).join('')}
    <tr><th>Total</th><th id="total">${got} / ${total}</th></tr></table>
    <div class="controls"><button class="ctl primary" id="restart">Start again</button></div>`;
   document.getElementById('restart').onclick=()=>{ ACTIVITIES.forEach((a,i)=>state[i]={answers:a.items.map(()=>a.type==='order'?[]:null), checked:false, score:null, hints:false}); finished=false; current=0; render(); };
