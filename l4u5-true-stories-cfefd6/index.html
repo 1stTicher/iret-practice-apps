@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>True Stories · Practice</title>
+<style>
+  :root { --wine:#6B3A33; --gold:#C5A059; --bg:#FBF6EC; --card:#FFFFFF; --soft:#F6ECE4; --text:#1A1A1A; --muted:#555555;
+          --ok:#2D7A4A; --okbg:#E3F1E8; --bad:#B04545; --badbg:#F8E5E5; --line:#EADFC8; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:Arial, Helvetica, sans-serif; background:var(--bg); color:var(--text); }
+  header { background:var(--wine); color:#fff; padding:14px 18px; }
+  header h1 { margin:0; font-size:22px; }
+  header p { margin:4px 0 0; font-size:14px; opacity:.9; }
+  main { max-width:860px; margin:0 auto; padding:16px; }
+  .progress { display:flex; flex-wrap:wrap; gap:6px; margin:4px 0 14px; }
+  .dot { width:34px; height:34px; border-radius:50%; border:2px solid var(--gold); background:#fff; color:var(--wine);
+         font-weight:bold; cursor:pointer; }
+  .dot.active { background:var(--wine); color:#fff; border-color:var(--wine); }
+  .dot.done { background:var(--okbg); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px; }
+  .card h2 { margin:0 0 4px; color:var(--wine); font-size:20px; }
+  .instr { margin:0 0 14px; color:var(--muted); }
+  .item { border-top:1px solid var(--line); padding:12px 0; }
+  .item:first-of-type { border-top:none; }
+  .q { font-weight:bold; margin-bottom:8px; }
+  .opts { display:flex; flex-wrap:wrap; gap:8px; }
+  .opt { border:2px solid var(--line); background:#fff; border-radius:20px; padding:7px 14px; cursor:pointer; font-size:15px; }
+  .opt.sel { border-color:var(--wine); background:var(--soft); }
+  .item.correct .opt.sel, .item.correct .answerline { border-color:var(--ok); background:var(--okbg); }
+  .item.wrong .opt.sel, .item.wrong .answerline { border-color:var(--bad); background:var(--badbg); }
+  .fb { margin-top:6px; font-size:14px; min-height:18px; }
+  .item.correct .fb { color:var(--ok); } .item.wrong .fb { color:var(--bad); }
+  .hint { display:none; margin-top:6px; font-size:14px; color:var(--wine); background:var(--soft); padding:6px 10px; border-radius:8px; }
+  .showhints .hint { display:block; }
+  .tiles { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+  .tile { border:1px solid var(--gold); background:#FBF3E4; border-radius:6px; padding:6px 10px; cursor:pointer; font-size:15px; }
+  .tile.used { visibility:hidden; }
+  .answerline { min-height:40px; border:2px dashed var(--line); border-radius:8px; padding:6px; display:flex; flex-wrap:wrap; gap:6px; }
+  .answerline .tile { background:#fff; }
+  .controls { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+  button.ctl { font-family:inherit; font-size:15px; border-radius:8px; padding:9px 14px; cursor:pointer; border:2px solid var(--wine); background:#fff; color:var(--wine); }
+  button.ctl.primary { background:var(--wine); color:#fff; }
+  .score { margin-top:10px; font-weight:bold; color:var(--wine); min-height:20px; }
+  .nav { display:flex; justify-content:space-between; margin-top:14px; }
+  .plan { display:grid; gap:6px; margin:6px 0 14px; font-size:13px; }
+  .floor { display:grid; grid-template-columns:110px repeat(4, 1fr) 70px 70px; gap:4px; align-items:stretch; }
+  .floor div { border:1px solid var(--wine); border-radius:6px; padding:6px 4px; text-align:center; background:#fff; }
+  .floor .lab { border:none; background:none; color:var(--wine); font-weight:bold; text-align:left; }
+  .floor .empty { border:none; background:none; }
+  table.sum { width:100%; border-collapse:collapse; margin-top:10px; }
+  table.sum td, table.sum th { border-bottom:1px solid var(--line); padding:8px; text-align:left; }
+  footer { text-align:center; color:var(--muted); font-size:12px; padding:18px; }
+  .passage { background:var(--soft); border-left:4px solid var(--gold); border-radius:8px; padding:12px 14px; margin:0 0 12px; line-height:1.55; }
+  .frame li { margin:6px 0; line-height:1.45; }
+  .prompt { font-size:18px; font-weight:bold; color:var(--wine); background:var(--soft); border-radius:10px; padding:12px; margin:10px 0; }
+  .clock { font-size:44px; font-weight:bold; text-align:center; color:var(--wine); margin:8px 0; }
+  .phase { text-align:center; color:var(--muted); font-weight:bold; }
+  .model { display:none; background:#fff; border:1px dashed var(--gold); border-radius:8px; padding:10px; margin-top:10px; line-height:1.5; }
+  .showmodel .model { display:block; }
+  .check li { margin:4px 0; }
+  .dot.active { background:var(--wine) !important; color:#fff !important; }
+</style>
+</head>
+<body>
+<header>
+  <h1>True Stories · Practice</h1>
+  <p>Level 4 · Unit 5 — story types, past perfect, broken plans, reacting to problems, 45-second stories</p>
+</header>
+<main>
+  <div class="progress" id="progress"></div>
+  <div class="card" id="stage"></div>
+  <div class="nav">
+    <button class="ctl" id="back">← Back</button>
+    <button class="ctl primary" id="next">Next →</button>
+  </div>
+</main>
+<footer>Irvin Romo · English Teacher</footer>
+<script>
+const ACTIVITIES = [
+ {
+  "id": "L4U05-APP-A01",
+  "title": "Kinds of true stories",
+  "instr": "Choose the story type.",
+  "type": "mcq",
+  "items": [
+   [
+    "She started selling tacos from home and now owns ten restaurants. A real ___.",
+    [
+     "success story",
+     "family saga",
+     "horror story"
+    ],
+    "success story",
+    "Someone achieves great success."
+   ],
+   [
+    "Five generations of the same family have run the bakery since 1890. It's a ___.",
+    [
+     "family saga",
+     "love story",
+     "mystery"
+    ],
+    "family saga",
+    "A family's story over many years."
+   ],
+   [
+    "Nobody knows who leaves flowers at the door every year. It's a ___.",
+    [
+     "mystery",
+     "success story",
+     "coming-of-age story"
+    ],
+    "mystery",
+    "Strange events — explained (or not) at the end."
+   ],
+   [
+    "He lost his job, his car and his laptop in one week. What a ___!",
+    [
+     "hard-luck story",
+     "feel-good story",
+     "love story"
+    ],
+    "hard-luck story",
+    "Bad luck that makes you feel sympathy."
+   ],
+   [
+    "The movie shows a shy teenager becoming a confident adult. A ___.",
+    [
+     "coming-of-age story",
+     "personal tragedy",
+     "family saga"
+    ],
+    "coming-of-age story",
+    "Growing from youth to adulthood."
+   ],
+   [
+    "A university team taught kids to build simple robots. A ___.",
+    [
+     "feel-good story",
+     "horror story",
+     "hard-luck story"
+    ],
+    "feel-good story",
+    "It leaves you happy and positive."
+   ],
+   [
+    "The night before the competition, all the code disappeared. An engineering ___.",
+    [
+     "horror story",
+     "love story",
+     "success story"
+    ],
+    "horror story",
+    "It shocks or scares people."
+   ],
+   [
+    "A couple meets again 30 years after high school. A ___.",
+    [
+     "love story",
+     "family saga",
+     "mystery"
+    ],
+    "love story",
+    "Two people who fall in love."
+   ],
+   [
+    "The newspaper wrote about a mechanic who builds wheelchairs for free. A ___.",
+    [
+     "human interest story",
+     "horror story",
+     "hard-luck story"
+    ],
+    "human interest story",
+    "Real people's lives and feelings in the news."
+   ],
+   [
+    "After a ___, the coach became even more dedicated to the team.",
+    [
+     "personal tragedy",
+     "success story",
+     "feel-good story"
+    ],
+    "personal tragedy",
+    "A very sad event, often a loss."
+   ]
+  ]
+ },
+ {
+  "id": "L4U05-APP-A02",
+  "title": "Irregular past participles",
+  "instr": "Choose the past participle (had + ___).",
+  "type": "mcq",
+  "items": [
+   [
+    "They had ___ me as president before the meeting. (choose)",
+    [
+     "chosen",
+     "chose",
+     "choosed"
+    ],
+    "chosen",
+    "choose · chose · chosen"
+   ],
+   [
+    "He had ___ the leader by March. (become)",
+    [
+     "become",
+     "became",
+     "becomed"
+    ],
+    "become",
+    "become · became · become"
+   ],
+   [
+    "I had never ___ that machine before. (see)",
+    [
+     "seen",
+     "saw",
+     "seed"
+    ],
+    "seen",
+    "see · saw · seen"
+   ],
+   [
+    "Everyone had ___ home. (go)",
+    [
+     "gone",
+     "went",
+     "goed"
+    ],
+    "gone",
+    "go · went · gone"
+   ],
+   [
+    "Someone had ___ the keys. (take)",
+    [
+     "taken",
+     "took",
+     "taked"
+    ],
+    "taken",
+    "take · took · taken"
+   ],
+   [
+    "The motor had ___ twice. (break)",
+    [
+     "broken",
+     "broke",
+     "breaked"
+    ],
+    "broken",
+    "break · broke · broken"
+   ],
+   [
+    "She had already ___ the report. (write)",
+    [
+     "written",
+     "wrote",
+     "writed"
+    ],
+    "written",
+    "write · wrote · written"
+   ]
+  ]
+ },
+ {
+  "id": "L4U05-APP-A03",
+  "title": "Simple past or past perfect?",
+  "instr": "Choose the correct form. The EARLIER action uses had + participle.",
+  "type": "mcq",
+  "items": [
+   [
+    "When I arrived at the stadium, the match ___.",
+    [
+     "had already started",
+     "already started",
+     "has already started"
+    ],
+    "had already started",
+    "The match started first, then you arrived."
+   ],
+   [
+    "I ___ for the exam, so I felt nervous.",
+    [
+     "hadn't studied",
+     "didn't studied",
+     "haven't studied"
+    ],
+    "hadn't studied",
+    "Not studying happened before feeling nervous."
+   ],
+   [
+    "By the time the company called, he ___ another offer.",
+    [
+     "had accepted",
+     "accepted",
+     "has accepted"
+    ],
+    "had accepted",
+    "by the time + simple past → past perfect for the earlier event."
+   ],
+   [
+    "She knew the answer because she ___ the manual.",
+    [
+     "had read",
+     "has read",
+     "reads"
+    ],
+    "had read",
+    "Reading the manual came first."
+   ],
+   [
+    "We finished the prototype after we ___ the code.",
+    [
+     "had fixed",
+     "have fixed",
+     "fix"
+    ],
+    "had fixed",
+    "Fixing the code came first."
+   ],
+   [
+    "When the phone rang, I ___ my report yet.",
+    [
+     "hadn't finished",
+     "didn't finished",
+     "haven't finish"
+    ],
+    "hadn't finished",
+    "Negative: hadn't + past participle."
+   ],
+   [
+    "By 8 a.m., the technician ___ the lab.",
+    [
+     "had already left",
+     "already left",
+     "has already leave"
+    ],
+    "had already left",
+    "He left before 8 a.m."
+   ]
+  ]
+ },
+ {
+  "id": "L4U05-APP-A04",
+  "title": "Build the sentence",
+  "instr": "Tap the words in the correct order.",
+  "type": "order",
+  "items": [
+   [
+    [
+     "By the time",
+     "we got there,",
+     "the sensor",
+     "had",
+     "disappeared."
+    ],
+    "By the time we got there, the sensor had disappeared.",
+    "Start with 'By the time…'."
+   ],
+   [
+    [
+     "She",
+     "had never",
+     "seen",
+     "that man",
+     "before."
+    ],
+    "She had never seen that man before.",
+    "had + never + participle."
+   ],
+   [
+    [
+     "Had",
+     "you ever",
+     "heard",
+     "a noise",
+     "like that?"
+    ],
+    "Had you ever heard a noise like that?",
+    "Question: Had + subject + participle."
+   ],
+   [
+    [
+     "I",
+     "hadn't locked",
+     "the cabinet",
+     "because",
+     "I was in a hurry."
+    ],
+    "I hadn't locked the cabinet because I was in a hurry.",
+    "Negative first, then the reason."
+   ],
+   [
+    [
+     "Before the judges arrived,",
+     "someone",
+     "had",
+     "moved",
+     "the robot."
+    ],
+    "Before the judges arrived, someone had moved the robot.",
+    "Time clause first."
+   ]
+  ]
+ },
+ {
+  "id": "L4U05-APP-A05",
+  "title": "Broken plans",
+  "instr": "Choose 'going to' (intention) or 'supposed to' (duty / expectation).",
+  "type": "mcq",
+  "items": [
+   [
+    "I was ___ text you, but I forgot. (my own plan)",
+    [
+     "going to",
+     "supposed to",
+     "supposed"
+    ],
+    "going to",
+    "A personal intention → going to."
+   ],
+   [
+    "You were ___ bring the keys! (it was your job)",
+    [
+     "supposed to",
+     "going to",
+     "suppose to"
+    ],
+    "supposed to",
+    "A duty / expectation → supposed to."
+   ],
+   [
+    "The flight was ___ leave at noon, but it was delayed.",
+    [
+     "supposed to",
+     "going",
+     "suppose"
+    ],
+    "supposed to",
+    "An official schedule → supposed to."
+   ],
+   [
+    "We ___ going to call the sponsor.",
+    [
+     "were",
+     "was",
+     "are"
+    ],
+    "were",
+    "we → were."
+   ],
+   [
+    "She ___ supposed to send the report.",
+    [
+     "was",
+     "were",
+     "is"
+    ],
+    "was",
+    "she → was."
+   ],
+   [
+    "They were going to win, but they ___.",
+    [
+     "lost",
+     "lose",
+     "had lose"
+    ],
+    "lost",
+    "Simple past after 'but'."
+   ],
+   [
+    "He ___ to finish yesterday.",
+    [
+     "was supposed",
+     "supposed",
+     "suppose"
+    ],
+    "was supposed",
+    "was + supposed to."
+   ]
+  ]
+ },
+ {
+  "id": "L4U05-APP-A06",
+  "title": "Fix the reporter's mistakes",
+  "instr": "Choose the correct sentence.",
+  "type": "mcq",
+  "items": [
+   [
+    "By the time I arrived, …",
+    [
+     "she had already left.",
+     "she already leave.",
+     "she has already left."
+    ],
+    "she had already left.",
+    "had + past participle."
+   ],
+   [
+    "Choose the correct one:",
+    [
+     "He had never seen anything like that.",
+     "He hadn't never seen anything like that.",
+     "He had never saw anything like that."
+    ],
+    "He had never seen anything like that.",
+    "Only one negative; participle 'seen'."
+   ],
+   [
+    "Choose the correct one:",
+    [
+     "The train was supposed to arrive at noon.",
+     "The train were supposed to arrive at noon.",
+     "The train was suppose to arrive at noon."
+    ],
+    "The train was supposed to arrive at noon.",
+    "the train → was; supposed with -d."
+   ],
+   [
+    "Choose the correct one:",
+    [
+     "Had you ever seen something so strange?",
+     "Had you ever see something so strange?",
+     "Did you ever had seen something so strange?"
+    ],
+    "Had you ever seen something so strange?",
+    "Had + you + ever + participle."
+   ],
+   [
+    "Choose the correct one:",
+    [
+     "The coach had chosen the team before the season started.",
+     "The coach choose the team before the season start.",
+     "The coach had choose the team before the season started."
+    ],
+    "The coach had chosen the team before the season started.",
+    "chosen (participle) + started (simple past)."
+   ],
+   [
+    "Choose the correct one:",
+    [
+     "People are always talking about the robotics team.",
+     "People is always talking about the robotics team.",
+     "People are always talk about the robotics team."
+    ],
+    "People are always talking about the robotics team.",
+    "people = plural → are."
+   ]
+  ]
+ },
+ {
+  "id": "L4U05-APP-A07",
+  "title": "Reacting to problems",
+  "instr": "Choose the best phrase: firm but polite.",
+  "type": "mcq",
+  "items": [
+   [
+    "These aren't the motors we ordered. There must be some kind of ___.",
+    [
+     "mistake",
+     "problem it",
+     "error that"
+    ],
+    "mistake",
+    "There must be some kind of mistake."
+   ],
+   [
+    "Would you mind ___ another look?",
+    [
+     "taking",
+     "to take",
+     "take"
+    ],
+    "taking",
+    "Would you mind + -ing."
+   ],
+   [
+    "I'd like to ___ to the manager, please.",
+    [
+     "speak",
+     "talk with to",
+     "say"
+    ],
+    "speak",
+    "I'd like to speak to the manager."
+   ],
+   [
+    "I understand, but this really ___ to be fixed.",
+    [
+     "needs",
+     "need",
+     "is need"
+    ],
+    "needs",
+    "this → needs."
+   ],
+   [
+    "Our competition is on Saturday, so what can be ___ about it today?",
+    [
+     "done",
+     "did",
+     "do"
+    ],
+    "done",
+    "What can be done about it?"
+   ],
+   [
+    "I'd appreciate an ___.",
+    [
+     "update",
+     "updating",
+     "updated"
+    ],
+    "update",
+    "I'd appreciate an update."
+   ]
+  ]
+ },
+ {
+  "id": "L4U05-APP-A08",
+  "title": "The witness statement",
+  "instr": "Read the conversation, then answer.",
+  "type": "mcq",
+  "items": [
+   [
+    "What had already happened when she got to the lab?",
+    [
+     "Someone had taken the sensor.",
+     "Someone had broken the cabinet.",
+     "The man had called security."
+    ],
+    "Someone had taken the sensor.",
+    "Look at her first answer."
+   ],
+   [
+    "Why hadn't she locked the cabinet?",
+    [
+     "She was in a hurry — her bus had arrived early.",
+     "She had lost the key.",
+     "Sofia had the key."
+    ],
+    "She was in a hurry — her bus had arrived early.",
+    "Look for 'because'."
+   ],
+   [
+    "What had Sofia seen?",
+    [
+     "A man near the door.",
+     "The sensor in a bag.",
+     "A car outside."
+    ],
+    "A man near the door.",
+    "About an hour earlier."
+   ],
+   [
+    "Had Sofia seen the man before?",
+    [
+     "No, she hadn't.",
+     "Yes, she had.",
+     "We don't know."
+    ],
+    "No, she hadn't.",
+    "She had never seen him before."
+   ],
+   [
+    "What had the man done by the time she called security?",
+    [
+     "He had already left the building.",
+     "He had returned the sensor.",
+     "He had locked the door."
+    ],
+    "He had already left the building.",
+    "Last line."
+   ]
+  ],
+  "passage": "<strong>Detective:</strong> So, tell me exactly what happened on Tuesday morning.<br><strong>Witness:</strong> Well, by the time I got to the lab, someone had already taken the sensor from the cabinet.<br><strong>Detective:</strong> Had you locked the cabinet the night before?<br><strong>Witness:</strong> No, I hadn't. I was in a hurry, because my bus had arrived early.<br><strong>Detective:</strong> Did anyone else see something?<br><strong>Witness:</strong> Yes. My teammate Sofia said she had seen a man near the door about an hour earlier. She had never seen him before.<br><strong>Detective:</strong> And when did you call security?<br><strong>Witness:</strong> Right after I noticed. But by then, the man had already left the building."
+ },
+ {
+  "id": "L4U05-APP-A09",
+  "title": "The robot that came back",
+  "instr": "Read the radio report, then answer.",
+  "type": "mcq",
+  "items": [
+   [
+    "What had the students built?",
+    [
+     "A small delivery robot.",
+     "A bus.",
+     "A drone."
+    ],
+    "A small delivery robot.",
+    "First sentences."
+   ],
+   [
+    "What was supposed to happen?",
+    [
+     "The robot was supposed to travel with them to Querétaro.",
+     "The robot was supposed to win.",
+     "The driver was supposed to call them."
+    ],
+    "The robot was supposed to travel with them to Querétaro.",
+    "Look for 'supposed to'."
+   ],
+   [
+    "Where had the robot been for two weeks?",
+    [
+     "In the luggage area of another bus.",
+     "At the university.",
+     "In Querétaro."
+    ],
+    "In the luggage area of another bus.",
+    "A bus that had gone to Saltillo."
+   ],
+   [
+    "Who found it?",
+    [
+     "A bus driver.",
+     "A student.",
+     "The reporter."
+    ],
+    "A bus driver.",
+    "He saw the sticker."
+   ],
+   [
+    "How long had they worked on the robot?",
+    [
+     "Six months.",
+     "Two weeks.",
+     "Four hours."
+    ],
+    "Six months.",
+    "We had worked on it for…"
+   ]
+  ],
+  "passage": "<strong>Reporter:</strong> Here's a feel-good story from Monterrey. Last month, a team of mechatronics students had built a small delivery robot for a national competition. The robot was supposed to travel with them by bus to Querétaro, but when they arrived, the box was empty.<br><strong>Student:</strong> We were devastated. We had worked on it for six months, and the competition was the next morning.<br><strong>Reporter:</strong> For two weeks, nobody knew where it was. Then a bus driver found it in the luggage area of another bus that had gone to Saltillo. He saw the university sticker and called the team.<br><strong>Student:</strong> He drove four hours just to return it. We didn't win this year, but now he's our honorary member."
+ },
+ {
+  "id": "L4U05-APP-A10",
+  "title": "Make your story shorter",
+  "instr": "A 45-second answer needs: 1 opening sentence · 2–3 main events · 1 closing sentence. Choose what to keep or cut.",
+  "type": "mcq",
+  "items": [
+   [
+    "Question: 'Describe a time something went wrong before an important event.' Which is the best OPENING?",
+    [
+     "A few hours before my first date with my girlfriend, something went wrong.",
+     "Well, so, I don't know, I think it was maybe two or three years ago, when I was in my first semester, or maybe second…",
+     "My girlfriend studied in a high school that was very far from my house."
+    ],
+    "A few hours before my first date with my girlfriend, something went wrong.",
+    "Answer the question in ONE sentence: when + what."
+   ],
+   [
+    "Which detail can you CUT without losing the story?",
+    [
+     "The name of the Metro station where I changed trains.",
+     "I dropped the flowers on the subway.",
+     "I bought new flowers on the way."
+    ],
+    "The name of the Metro station where I changed trains.",
+    "Keep only details that move the story forward."
+   ],
+   [
+    "Which is the best way to say the main events?",
+    [
+     "I had bought flowers, but I dropped them on the subway, so I bought new ones near her school.",
+     "I bought flowers. And then. Then I was on the subway. And then I was nervous. And then…",
+     "First of all, I want to explain that I always buy flowers because…"
+    ],
+    "I had bought flowers, but I dropped them on the subway, so I bought new ones near her school.",
+    "Connect events with but / so / then — one clear line."
+   ],
+   [
+    "Which is the best CLOSING sentence?",
+    [
+     "In the end, she loved the surprise, and I learned to always have a plan B.",
+     "And yeah, that's it, I think, more or less.",
+     "Then I went home."
+    ],
+    "In the end, she loved the surprise, and I learned to always have a plan B.",
+    "Result + what you learned."
+   ],
+   [
+    "About how many words fit in 45 seconds of natural speech?",
+    [
+     "About 90–110 words",
+     "About 30 words",
+     "About 300 words"
+    ],
+    "About 90–110 words",
+    "Roughly 2–2.5 words per second."
+   ]
+  ]
+ },
+ {
+  "id": "L4U05-APP-A11",
+  "title": "45-second story trainer",
+  "type": "timer",
+  "instr": "Prepare for 15 seconds, then speak for 45 seconds. Follow the frame. Record yourself on your phone and listen back.",
+  "items": [],
+  "prompts": [
+   "Describe a time something went wrong before an important event. What happened, and what did you do?",
+   "Describe a time when a plan you had did not work out as expected. What happened, and what did you learn?",
+   "Tell a coincidence that surprised you. What had happened before, and what happened by chance?",
+   "Describe a problem you had with a delivery, a service or a company. How did you react?"
+  ],
+  "frame": [
+   "<strong>Opening (1 sentence, ~5 s):</strong> when + what. “A few hours before…, something went wrong.”",
+   "<strong>Main events (2–3 sentences, ~30 s):</strong> past perfect for the earlier action + but / so. “I had…, but… so I…”",
+   "<strong>Closing (1 sentence, ~10 s):</strong> result + lesson. “In the end… That taught me…”"
+  ],
+  "model": "A few hours before my first date with my girlfriend, something went wrong. I had bought flowers and chocolates to surprise her after school, but on the subway someone pushed me and I dropped the flowers. They were completely destroyed, and I only had twenty minutes left. So I got off one station early, found a small flower stand and bought a new bunch with the money I had saved for the movie tickets. In the end, she loved the surprise, we watched a movie at home, and I learned to always have a plan B. (≈100 words · 45 seconds)"
+ }
+];
+
+// ---- 45-second trainer (open speaking; no automatic score) ----
+let tmr=null;
+function renderTimer(a,s){
+  s.p = s.p||0;
+  stage.innerHTML=`<h2>${current+1}. ${a.title}</h2><p class="instr">${a.instr}</p>
+  <ol class="frame">${a.frame.map(f=>`<li>${f}</li>`).join('')}</ol>
+  <div class="prompt" id="prompt">${a.prompts[s.p]}</div>
+  <div class="phase" id="phase">Ready?</div><div class="clock" id="clock">0:15</div>
+  <div class="controls"><button class="ctl primary" id="go">Start (15 s prepare → 45 s speak)</button><button class="ctl" id="stop">Stop</button><button class="ctl" id="newq">Another question</button><button class="ctl" id="mdl">Show model answer</button></div>
+  <div class="${s.model?'showmodel':''}"><div class="model">${a.model}</div></div>
+  <p class="instr" style="margin-top:12px"><strong>After speaking, check:</strong></p>
+  <ul class="check"><li><label><input type="checkbox"> I answered the question in my first sentence.</label></li><li><label><input type="checkbox"> I used only 2–3 main events.</label></li><li><label><input type="checkbox"> I used the past perfect at least once.</label></li><li><label><input type="checkbox"> I finished with a result or lesson before 45 seconds.</label></li></ul>
+  <div class="score">Open speaking practice — self-check only, no automatic score.</div>`;
+  const clock=document.getElementById('clock'), phase=document.getElementById('phase');
+  const fmt=t=>`0:${String(t).padStart(2,'0')}`;
+  function run(sec,label,next){ let t=sec; phase.textContent=label; clock.textContent=fmt(t); clearInterval(tmr);
+    tmr=setInterval(()=>{ t--; clock.textContent=fmt(Math.max(t,0)); if(t<=0){ clearInterval(tmr); next&&next(); } },1000); }
+  document.getElementById('go').onclick=()=>{ s.started=true; renderProgress(); run(15,'Prepare: key words only',()=>run(45,'Speak now!',()=>{phase.textContent='Time! Did you finish your closing sentence?';})); };
+  document.getElementById('stop').onclick=()=>{ clearInterval(tmr); phase.textContent='Stopped'; };
+  document.getElementById('newq').onclick=()=>{ clearInterval(tmr); s.p=(s.p+1)%a.prompts.length; renderTimer(a,s); };
+  document.getElementById('mdl').onclick=()=>{ s.model=!s.model; renderTimer(a,s); };
+  document.getElementById('back').disabled = current===0;
+  document.getElementById('next').textContent = current===ACTIVITIES.length-1 ? 'Finish ✓' : 'Next →';
+}
+// deterministic shuffle so the correct option is not always first
+function seeded(s){ let h=2166136261; for(const c of s){ h^=c.charCodeAt(0); h=Math.imul(h,16777619);} return ()=>{ h^=h<<13; h^=h>>>17; h^=h<<5; return ((h>>>0)%1000)/1000; }; }
+function shuffle(arr, key){ const r=seeded(key), a=arr.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(r()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+const state = ACTIVITIES.map(a => ({answers:a.items.map(()=>a.type==='order'?[]:null), checked:false, score:null, hints:false}));
+let current = 0, finished = false;
+const stage = document.getElementById('stage');
+
+function planHTML(){
+  const f=(label, rooms)=>`<div class="floor"><div class="lab">${label}</div>${rooms.map(r=>r?`<div>${r}</div>`:'<div class="empty"></div>').join('')}<div>stairs</div><div>elevator</div></div>`;
+  return `<div class="plan" aria-label="Restaurant floor plan">${f('Second floor',['office','staff room','',''])}${f('Ground floor',['entrance + lobby','kitchen','dining room','restroom'])}${f('Basement',['storage room','cold room','',''])}<div style="color:var(--muted)">On the ground floor, the hallway goes from the lobby to the stairs. The rooms are on your right.</div></div>`;
+}
+
+function render(){
+  clearInterval(tmr);
+  renderProgress();
+  if(finished){ return renderSummary(); }
+  const a=ACTIVITIES[current], s=state[current];
+  if(a.type==='timer') return renderTimer(a,s);
+  let html=`<h2>${current+1}. ${a.title}</h2><p class="instr">${a.instr}</p>${a.plan?planHTML():''}${a.passage?`<div class="passage">${a.passage}</div>`:''}${a.audio?`<p><a href="https://drive.google.com/file/d/${a.audio}/view" target="_blank" rel="noopener">Open recording in Drive</a> (sign in with your learner account if needed)</p><iframe title="Instructional recording" src="https://drive.google.com/file/d/${a.audio}/preview" width="100%" height="100" allow="autoplay"></iframe><p>Listen once: overall meaning. Listen again: details. Answers follow your attempt.</p><button class="ctl" id="transcript">${s.transcript?'Hide transcript':'Review transcript'}</button>${s.transcript?`<div class="item"><h3>Complete transcript — review mode</h3><p>${a.transcript}</p><h3>Evidence hunt and speaking</h3><p>Find one sentence supporting every answer. Then tell a true or fictional viral story using who, which/that and where.</p><p><strong>Possible model:</strong> I remember a boy who made a shirt from a plastic bag. It was a story that many people shared. He travelled to Qatar, where he met his hero.</p><p><strong>Success criteria:</strong> identify the person, event and place; use at least two accurate relative clauses; keep facts clear. This open response is for self-review and teacher feedback; it has no automatic score.</p></div>`:''}`:''}<div class="items ${s.hints?'showhints':''}" data-activity="${a.id}" data-targets="${a.targets}">`;
+  a.items.forEach((it,i)=>{
+    if(a.type==='mcq'){
+      const opts=shuffle(it[1], a.id+i);
+      html+=`<div class="item" data-i="${i}"><div class="q">${i+1}. ${it[0]}</div><div class="opts">${opts.map(o=>`<button class="opt${s.answers[i]===o?' sel':''}" data-v="${encodeURIComponent(o)}">${o}</button>`).join('')}</div><div class="hint">Hint: ${it[3]}</div><div class="fb"></div></div>`;
+    } else {
+      const tiles=shuffle(it[0], a.id+i), used=s.answers[i];
+      html+=`<div class="item" data-i="${i}"><div class="q">${i+1}.</div><div class="tiles">${tiles.map((w,k)=>`<button class="tile${used.includes(k)?' used':''}" data-k="${k}">${w}</button>`).join('')}</div><div class="answerline">${used.map(k=>`<button class="tile placed" data-k="${k}">${tiles[k]}</button>`).join('')}</div><div class="hint">Hint: ${it[2]}</div><div class="fb"></div></div>`;
+    }
+  });
+  html+=`</div><div class="controls"><button class="ctl" id="hint">Hint</button><button class="ctl primary" id="check">Check</button><button class="ctl" id="show">Show answers</button><button class="ctl" id="retry">Try again</button></div><div class="score" id="score">${s.revealed?'Review mode — answers shown; no independent score.':s.score!==null?scoreText(s.score,a.items.length):''}</div>`;
+  stage.innerHTML=html;
+  if(s.checked) paintCheck(false);
+  bind();
+  document.getElementById('back').disabled = current===0;
+  document.getElementById('next').textContent = current===ACTIVITIES.length-1 ? 'Finish ✓' : 'Next →';
+}
+
+function renderProgress(){
+  const p=document.getElementById('progress');
+  p.innerHTML=ACTIVITIES.map((a,i)=>`<button class="dot${i===current&&!finished?' active':''}${(state[i].checked||state[i].started)?' done':''}" data-go="${i}" title="${a.title}">${i+1}</button>`).join('');
+  p.querySelectorAll('.dot').forEach(d=>d.onclick=()=>{ finished=false; current=+d.dataset.go; render(); });
+}
+
+function tilesFor(i){ const a=ACTIVITIES[current]; return shuffle(a.items[i][0], a.id+i); }
+
+function bind(){
+  const a=ACTIVITIES[current], s=state[current];
+  stage.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{ const i=+b.closest('.item').dataset.i; s.answers[i]=decodeURIComponent(b.dataset.v); s.checked=false; s.score=null; render(); });
+  stage.querySelectorAll('.tiles .tile').forEach(b=>b.onclick=()=>{ const i=+b.closest('.item').dataset.i, k=+b.dataset.k; if(!s.answers[i].includes(k)) s.answers[i].push(k); s.checked=false; s.score=null; render(); });
+  stage.querySelectorAll('.answerline .tile').forEach(b=>b.onclick=()=>{ const i=+b.closest('.item').dataset.i, k=+b.dataset.k; s.answers[i]=s.answers[i].filter(x=>x!==k); s.checked=false; s.score=null; render(); });
+  if(a.audio) document.getElementById('transcript').onclick=()=>{s.transcript=!s.transcript; if(s.transcript){s.revealed=true;s.score=null;} render();};
+  document.getElementById('hint').onclick=()=>{ s.hints=!s.hints; render(); };
+  document.getElementById('check').onclick=()=>{ s.checked=true; s.score=s.revealed?null:countCorrect(); render(); };
+  document.getElementById('show').onclick=()=>{ showAnswers(); s.checked=true; s.score=null; s.revealed=true; render(); };
+  document.getElementById('retry').onclick=()=>{ state[current]={answers:a.items.map(()=>a.type==='order'?[]:null), checked:false, score:null, hints:false}; render(); };
+}
+
+function isCorrect(i){
+  const a=ACTIVITIES[current], s=state[current], it=a.items[i];
+  if(a.type==='mcq') return s.answers[i]===it[2];
+  const tiles=tilesFor(i); return s.answers[i].map(k=>tiles[k]).join(' ')===it[1];
+}
+function countCorrect(){ return ACTIVITIES[current].items.reduce((n,_,i)=>n+(isCorrect(i)?1:0),0); }
+function scoreText(n,t){ return `Score: ${n} / ${t}` + (n===t?' — excellent!':''); }
+
+function paintCheck(){
+  const a=ACTIVITIES[current], s=state[current];
+  stage.querySelectorAll('.item').forEach(el=>{
+    const i=+el.dataset.i, ok=isCorrect(i), empty=a.type==='mcq'?s.answers[i]===null:s.answers[i].length===0;
+    el.classList.add(ok?'correct':'wrong');
+    const right=a.type==='mcq'?a.items[i][2]:a.items[i][1].replace(' ?','?');
+    el.querySelector('.fb').textContent = s.revealed ? 'Review answer: '+right : ok ? 'Correct!' : (empty ? 'Choose an answer. ' : 'Not yet. ') + (s.revealed ? 'Answer: '+right : 'Try the hint.');
+  });
+}
+
+function showAnswers(){
+  const a=ACTIVITIES[current], s=state[current];
+  a.items.forEach((it,i)=>{
+    if(a.type==='mcq') s.answers[i]=it[2];
+    else { s.answers[i]=tileOrder(tilesFor(i), it[1]); }
+  });
+}
+
+// Tile indexes that spell the answer; tiles can hold more than one word ("my motorcycle").
+function tileOrder(tiles, answer){
+  const taken=[]; let rest=answer;
+  while(rest.length){
+    const k=tiles.map((t,idx)=>idx).filter(idx=>!taken.includes(idx)&&(rest===tiles[idx]||rest.startsWith(tiles[idx]+' ')))
+                 .sort((x,y)=>tiles[y].length-tiles[x].length)[0];
+    if(k===undefined) break;
+    taken.push(k); rest=rest.slice(tiles[k].length).trimStart();
+  }
+  return taken;
+}
+
+function renderSummary(){
+  const total=ACTIVITIES.reduce((n,a)=>n+a.items.length,0);
+  const got=state.reduce((n,s)=>n+(s.revealed?0:(s.score||0)),0);
+  stage.innerHTML=`<h2>Well done!</h2><p class="instr">Here is your score for each activity. Choose an activity to practice again.</p>
+   <table class="sum"><tr><th>Activity</th><th>Score</th></tr>${ACTIVITIES.map((a,i)=>`<tr><td>${i+1}. ${a.title}</td><td>${a.type==='timer'?(state[i].started?'practised — self-check':'not started'):state[i].revealed?'reviewed — no score':state[i].score===null?'not checked':state[i].score+' / '+a.items.length}</td></tr>`).join('')}
+   <tr><th>Total</th><th id="total">${got} / ${total}</th></tr></table>
+   <div class="controls"><button class="ctl primary" id="restart">Start again</button></div>`;
+  document.getElementById('restart').onclick=()=>{ ACTIVITIES.forEach((a,i)=>state[i]={answers:a.items.map(()=>a.type==='order'?[]:null), checked:false, score:null, hints:false}); finished=false; current=0; render(); };
+  document.getElementById('back').disabled=false;
+  document.getElementById('next').textContent='Finish ✓';
+}
+
+document.getElementById('back').onclick=()=>{ if(finished){ finished=false; } else if(current>0){ current--; } render(); };
+document.getElementById('next').onclick=()=>{ if(current<ACTIVITIES.length-1 && !finished){ current++; } else { finished=true; } render(); };
+render();
+</script>
+</body>
+</html>
